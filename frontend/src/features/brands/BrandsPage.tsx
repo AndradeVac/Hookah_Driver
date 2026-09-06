@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleOff, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useState } from 'react'
 import { createBrand, getBrands, updateBrandStatus, type Brand } from '../../services/brands'
 
@@ -8,6 +8,7 @@ export function BrandsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
   const [error, setError] = useState('')
 
   async function loadBrands() {
@@ -56,6 +57,9 @@ export function BrandsPage() {
     }
   }
 
+  const inactiveCount = brands.filter((brand) => !brand.active).length
+  const visibleBrands = showAll ? brands : brands.filter((brand) => brand.active)
+
   return (
     <section className="page-content simple-page">
       <div className="page-heading">
@@ -80,13 +84,19 @@ export function BrandsPage() {
       </form>
 
       <div className="resource-list">
-        <div className="resource-list-header"><strong>Marcas cadastradas</strong><span>{brands.length} registros</span></div>
+        <div className="resource-list-header">
+          <div><strong>{showAll ? 'Todas as marcas' : 'Marcas ativas'}</strong><span>{visibleBrands.length} registros</span></div>
+          {inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
+            {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showAll ? 'Ocultar inativas' : `Ver todas (${inactiveCount})`}
+          </button>}
+        </div>
         {isLoading ? (
           <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div>
-        ) : brands.length === 0 ? (
-          <div className="resource-state">Nenhuma marca cadastrada ainda.</div>
+        ) : visibleBrands.length === 0 ? (
+          <div className="resource-state">Nenhuma marca ativa cadastrada.</div>
         ) : (
-          brands.map((brand) => (
+          visibleBrands.map((brand) => (
             <article className="resource-row" key={brand.id}>
               <div><strong>{brand.name}</strong><span className={brand.active ? 'status-active' : 'status-inactive'}>{brand.active ? 'Ativa' : 'Inativa'}</span></div>
               <button className={brand.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(brand)} disabled={updatingId === brand.id} aria-label={`${brand.active ? 'Desativar' : 'Ativar'} ${brand.name}`}>
