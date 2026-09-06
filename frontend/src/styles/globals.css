@@ -335,6 +335,38 @@ button { cursor: pointer; }
   color: var(--text);
 }
 
+.dashboard-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-tools select,
+.dashboard-tools button {
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.dashboard-tools select option {
+  background: var(--shell-3);
+}
+
+.dashboard-tools button {
+  border-color: rgba(243, 200, 106, 0.24);
+  background: rgba(243, 200, 106, 0.1);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.dashboard-tools button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

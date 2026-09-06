@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,12 +15,32 @@ router = APIRouter(
 )
 
 
-@router.get(
-    "/dashboard",
-    response_model=DashboardAnalyticsResponse,
-)
+@router.get("/dashboard", response_model=DashboardAnalyticsResponse)
 def get_dashboard_analytics(
+    period: str = Query(default="month", pattern="^(month|quarter|all)$"),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
-    return AnalyticsService(db).dashboard()
+    return AnalyticsService(db).dashboard(period)
+
+
+@router.get("/dashboard/export")
+def export_dashboard(
+    period: str = Query(default="month", pattern="^(month|quarter|all)$"),
+    file_format: str = Query(default="xlsx", alias="format", pattern="^(xlsx|pdf)$"),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+):
+    service = AnalyticsService(db)
+    if file_format == "pdf":
+        return Response(
+            content=service.export_pdf(period),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=hookah-dashboard-{period}.pdf"},
+        )
+
+    return Response(
+        content=service.export_xlsx(period),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=hookah-dashboard-{period}.xlsx"},
+    )

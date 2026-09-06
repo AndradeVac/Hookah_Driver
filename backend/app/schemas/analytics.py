@@ -21,6 +21,9 @@ class BreakdownSummary(BaseModel):
 
 
 class DashboardAnalyticsResponse(BaseModel):
+    period: str
+    period_start: str
+    period_end: str
     revenue: Decimal
     order_count: int
     average_ticket: Decimal

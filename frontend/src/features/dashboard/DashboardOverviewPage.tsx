@@ -1,6 +1,6 @@
 import { AlertCircle, ArrowUpRight, BarChart3, ChartColumnBig, CreditCard, LoaderCircle, ShoppingCart, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { getDashboardAnalytics, type DashboardAnalytics } from '../../services/analytics'
+import { downloadDashboardExport, getDashboardAnalytics, type AnalyticsPeriod, type DashboardAnalytics } from '../../services/analytics'
 
 function formatMoney(value: string) {
   return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
@@ -11,12 +11,27 @@ const paymentLabels: Record<string, string> = { PIX: 'PIX', CARD: 'Cartão', CAS
 
 export function DashboardOverviewPage() {
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null)
+  const [period, setPeriod] = useState<AnalyticsPeriod>('month')
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    getDashboardAnalytics().then(setAnalytics).catch(() => setError('Não foi possível carregar os indicadores.')).finally(() => setIsLoading(false))
-  }, [])
+    setIsLoading(true)
+    getDashboardAnalytics(period).then(setAnalytics).catch(() => setError('Não foi possível carregar os indicadores.')).finally(() => setIsLoading(false))
+  }, [period])
+
+  async function exportDashboard(format: 'xlsx' | 'pdf') {
+    setIsExporting(true)
+    setError('')
+    try {
+      await downloadDashboardExport(period, format)
+    } catch {
+      setError('Não foi possível exportar o dashboard.')
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const metrics = [
     { label: 'Faturamento', value: analytics ? formatMoney(analytics.revenue) : '', delta: analytics ? `${analytics.order_count} pedidos no período` : '', icon: ShoppingCart },
@@ -30,7 +45,7 @@ export function DashboardOverviewPage() {
 
   return (
     <section className="page-content dashboard-tech-shell">
-      <div className="page-header dashboard-header"><div><span className="eyebrow black">HOOKAH DRIVE</span><h1>Visão do Lounge</h1><p>Resumo de desempenho</p></div></div>
+      <div className="page-header dashboard-header"><div><span className="eyebrow black">HOOKAH DRIVE</span><h1>Visão do Lounge</h1><p>Resumo de desempenho</p></div><div className="dashboard-tools"><select value={period} onChange={(event) => setPeriod(event.target.value as AnalyticsPeriod)} aria-label="Período do dashboard"><option value="month">Este mês</option><option value="quarter">Este trimestre</option><option value="all">Todo período</option></select><button type="button" onClick={() => void exportDashboard('xlsx')} disabled={isExporting}>Excel</button><button type="button" onClick={() => void exportDashboard('pdf')} disabled={isExporting}>PDF</button></div></div>
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
       <div className="metrics-grid">{metrics.map(({ label, value, delta, icon: Icon }) => <article key={label} className="metric-tech-card"><div className="metric-card-top"><span>{label}</span><div className="metric-icon"><Icon size={17} /></div></div><strong>{isLoading ? <LoaderCircle className="spin" size={22} /> : value}</strong><small>{delta}</small></article>)}</div>
       <div className="analytics-grid">
