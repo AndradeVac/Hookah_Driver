@@ -52,7 +52,7 @@ class ProductService:
         if data.category_id is not None:
             product.category_id = data.category_id
 
-        if data.flavor_id is not None:
+        if "flavor_id" in data.model_fields_set:
             product.flavor_id = data.flavor_id
 
         if data.name is not None:

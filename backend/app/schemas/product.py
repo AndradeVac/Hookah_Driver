@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 class ProductCreate(BaseModel):
     category_id: UUID
-    flavor_id: UUID
+    flavor_id: UUID | None = None
     name: str
     description: str | None = None
     price: Decimal
@@ -27,7 +27,7 @@ class ProductResponse(BaseModel):
 
     id: UUID
     category_id: UUID
-    flavor_id: UUID
+    flavor_id: UUID | None = None
     name: str
     description: str | None
     price: Decimal
