@@ -30,7 +30,7 @@ export function AppShell() {
   const { user, logout } = useAuth()
 
   return (
-    <div className="app-shell">
+    <div className="app-shell app-shell-dark">
       <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
         <div className="brand-lockup">
           <div className="brand-mark">H</div>
@@ -71,16 +71,33 @@ export function AppShell() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-chip"><CircleUserRound size={22} /><div><strong>{user?.name ?? 'Usuário'}</strong><span>{user?.role === 'ADMIN' ? 'Administrador' : 'Operador'}</span></div><button className="logout-button" onClick={logout}>Sair</button></div>
+          <div className="user-chip">
+            <CircleUserRound size={22} />
+            <div>
+              <strong>{user?.name ?? 'Usuário'}</strong>
+              <span>{user?.role === 'ADMIN' ? 'Administrador' : 'Operador'}</span>
+            </div>
+            <button className="logout-button" onClick={logout}>Sair</button>
+          </div>
         </div>
       </aside>
+
       {open && <button className="sidebar-overlay" onClick={() => setOpen(false)} aria-label="Fechar menu" />}
 
-      <main className="main-content">
-        <header className="topbar">
-          <button className="icon-button menu-trigger" onClick={() => setOpen(true)} aria-label="Abrir menu"><Menu size={20} /></button>
-          <div className="breadcrumb"><span>Hookah Driver</span><b>/</b><strong>Gestão</strong></div>
-          <div className="topbar-actions"><span className="status-dot"><i /> API online</span><button className="icon-button"><CircleUserRound size={21} /></button></div>
+      <main className="main-content main-content-dark">
+        <header className="topbar topbar-dark">
+          <button className="icon-button menu-trigger" onClick={() => setOpen(true)} aria-label="Abrir menu">
+            <Menu size={18} />
+          </button>
+          <div className="breadcrumb">
+            <span>Admin</span>
+            <b>—</b>
+            <strong>Dashboard</strong>
+          </div>
+          <div className="topbar-actions">
+            <span className="status-dot"><i /> API online</span>
+            <button className="icon-button"><CircleUserRound size={20} /></button>
+          </div>
         </header>
         <Outlet />
       </main>
