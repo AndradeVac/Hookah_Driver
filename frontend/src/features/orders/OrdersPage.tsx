@@ -1,5 +1,6 @@
-import { AlertCircle, ArrowRight, LoaderCircle } from 'lucide-react'
+import { AlertCircle, ArrowRight, LoaderCircle, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getCustomers, type Customer } from '../../services/customers'
 import { getOrders, updateOrderStatus, type Order } from '../../services/orders'
 import type { OrderStatus } from '../../types'
@@ -20,6 +21,7 @@ function formatTime(value: string) {
 }
 
 export function OrdersPage() {
+  const navigate = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -57,6 +59,7 @@ export function OrdersPage() {
     <section className="page-content orders-page-shell">
       <div className="page-header orders-header">
         <div><span className="eyebrow">Operação conectada</span><h1>Pedidos</h1><p>Operação em tempo real</p></div>
+        <button className="primary-button orders-new-button" type="button" onClick={() => navigate('/orders/new')}><Plus size={16} /> Novo pedido</button>
         <div className="pill-status">Hoje · {totalOrders} {totalOrders === 1 ? 'pedido' : 'pedidos'}</div>
       </div>
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}

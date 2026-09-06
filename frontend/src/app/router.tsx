@@ -9,6 +9,7 @@ import { LoginPage } from '../features/auth/LoginPage'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute'
 import { DashboardOverviewPage } from '../features/dashboard/DashboardOverviewPage'
 import { OrderDetailPage } from '../features/orders/OrderDetailPage'
+import { NewOrderPage } from '../features/orders/NewOrderPage'
 import { OrdersPage } from '../features/orders/OrdersPage'
 import { PlaceholderPage } from '../features/shared/PlaceholderPage'
 
@@ -22,6 +23,7 @@ export function AppRouter() {
             <Route path="/" element={<DashboardOverviewPage />} />
             <Route path="/dashboard" element={<DashboardOverviewPage />} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/new" element={<NewOrderPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/brands" element={<BrandsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />

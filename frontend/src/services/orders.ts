@@ -36,6 +36,15 @@ export async function getOrder(id: string) {
   return data
 }
 
+export async function createOrder(payload: {
+  customer_id: string
+  payment_method: 'PIX' | 'CARD' | 'CASH'
+  items: Array<{ product_id: string; quantity: number }>
+}) {
+  const { data } = await api.post<Order>('/orders', payload)
+  return data
+}
+
 export async function updateOrderStatus(id: string, status: OrderStatus) {
   const { data } = await api.patch<Order>(`/orders/${id}/status`, { status })
   return data
