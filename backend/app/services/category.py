@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import NotFoundError
 from app.models.category import Category
 from app.repositories.category import CategoryRepository
 from app.schemas.category import CategoryCreate, CategoryUpdate
@@ -27,7 +28,7 @@ class CategoryService:
         category = self.repository.get_by_id(category_id)
 
         if category is None:
-            raise ValueError("Categoria não encontrada.")
+            raise NotFoundError("Categoria não encontrada.")
 
         return category
 
@@ -43,7 +44,7 @@ class CategoryService:
         category = self.repository.get_by_id(category_id)
 
         if category is None:
-            raise ValueError("Categoria não encontrada.")
+            raise NotFoundError("Categoria não encontrada.")
 
         if data.name is not None:
             category.name = data.name
@@ -60,7 +61,7 @@ class CategoryService:
         category = self.repository.get_by_id(category_id)
 
         if category is None:
-            raise ValueError("Categoria não encontrada.")
+            raise NotFoundError("Categoria não encontrada.")
 
         self.repository.delete(category)
         self.db.commit()

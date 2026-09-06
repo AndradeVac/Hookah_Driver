@@ -20,13 +20,18 @@ class FlavorRepository:
 
     def get_by_id(self, flavor_id: UUID) -> Flavor | None:
         statement = select(Flavor).where(
-            Flavor.id == flavor_id
+            Flavor.id == flavor_id,
+            Flavor.active.is_(True),
         )
 
         return self.db.scalar(statement)
 
     def get_all(self) -> list[Flavor]:
-        statement = select(Flavor).order_by(Flavor.name)
+        statement = (
+            select(Flavor)
+            .where(Flavor.active.is_(True))
+            .order_by(Flavor.name)
+        )
 
         return list(self.db.scalars(statement).all())
 

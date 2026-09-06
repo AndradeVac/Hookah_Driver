@@ -3,7 +3,11 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
 
-class BrandNotFoundError(Exception):
+class NotFoundError(ValueError):
+    pass
+
+
+class BrandNotFoundError(NotFoundError):
     pass
 
 

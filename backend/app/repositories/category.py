@@ -20,13 +20,18 @@ class CategoryRepository:
 
     def get_by_id(self, category_id: UUID) -> Category | None:
         statement = select(Category).where(
-            Category.id == category_id
+            Category.id == category_id,
+            Category.active.is_(True),
         )
 
         return self.db.scalar(statement)
 
     def get_all(self) -> list[Category]:
-        statement = select(Category).order_by(Category.name)
+        statement = (
+            select(Category)
+            .where(Category.active.is_(True))
+            .order_by(Category.name)
+        )
 
         return list(self.db.scalars(statement).all())
 

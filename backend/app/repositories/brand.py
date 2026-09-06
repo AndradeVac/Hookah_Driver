@@ -20,7 +20,8 @@ class BrandRepository:
 
     def get_by_id(self, brand_id: UUID) -> Brand | None:
         statement = select(Brand).where(
-            Brand.id == brand_id
+            Brand.id == brand_id,
+            Brand.active.is_(True),
         )
 
         return self.db.scalar(statement)

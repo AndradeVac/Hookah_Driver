@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import NotFoundError
 from app.models.customer import Customer
 from app.repositories.customer import CustomerRepository
 from app.schemas.customer import CustomerCreate, CustomerUpdate
@@ -24,7 +25,7 @@ class CustomerService:
     def get_by_id(self, customer_id: UUID) -> Customer:
         customer = self.repository.get_by_id(customer_id)
         if customer is None:
-            raise ValueError("Cliente não encontrado.")
+            raise NotFoundError("Cliente não encontrado.")
         return customer
 
     def get_all(self) -> list[Customer]:

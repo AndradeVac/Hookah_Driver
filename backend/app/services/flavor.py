@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import NotFoundError
 from app.models.flavor import Flavor
 from app.repositories.brand import BrandRepository
 from app.repositories.flavor import FlavorRepository
@@ -19,7 +20,7 @@ class FlavorService:
         brand = self.brand_repository.get_by_id(brand_id)
 
         if brand is None or not brand.active:
-            raise ValueError("Marca não encontrada ou inativa.")
+            raise NotFoundError("Marca não encontrada ou inativa.")
 
     def create(self, data: FlavorCreate) -> Flavor:
         self._validate_brand(data.brand_id)
@@ -39,7 +40,7 @@ class FlavorService:
         flavor = self.repository.get_by_id(flavor_id)
 
         if flavor is None:
-            raise ValueError("Sabor não encontrado.")
+            raise NotFoundError("Sabor não encontrado.")
 
         return flavor
 
@@ -55,7 +56,7 @@ class FlavorService:
         flavor = self.repository.get_by_id(flavor_id)
 
         if flavor is None:
-            raise ValueError("Sabor não encontrado.")
+            raise NotFoundError("Sabor não encontrado.")
 
         if data.brand_id is not None:
             self._validate_brand(data.brand_id)
@@ -79,7 +80,7 @@ class FlavorService:
         flavor = self.repository.get_by_id(flavor_id)
 
         if flavor is None:
-            raise ValueError("Sabor não encontrado.")
+            raise NotFoundError("Sabor não encontrado.")
 
         self.repository.delete(flavor)
         self.db.commit()

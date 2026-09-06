@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import NotFoundError
 from app.models.product import Product
 from app.repositories.category import CategoryRepository
 from app.repositories.flavor import FlavorRepository
@@ -24,12 +25,12 @@ class ProductService:
     ) -> None:
         category = self.category_repository.get_by_id(category_id)
         if category is None or not category.active:
-            raise ValueError("Categoria não encontrada ou inativa.")
+            raise NotFoundError("Categoria não encontrada ou inativa.")
 
         if flavor_id is not None:
             flavor = self.flavor_repository.get_by_id(flavor_id)
             if flavor is None or not flavor.active:
-                raise ValueError("Sabor não encontrado ou inativo.")
+                raise NotFoundError("Sabor não encontrado ou inativo.")
 
     def create(self, data: ProductCreate) -> Product:
         self._validate_relationships(data.category_id, data.flavor_id)
@@ -51,7 +52,7 @@ class ProductService:
         product = self.repository.get_by_id(product_id)
 
         if product is None:
-            raise ValueError("Produto não encontrado.")
+            raise NotFoundError("Produto não encontrado.")
 
         return product
 
@@ -67,7 +68,7 @@ class ProductService:
         product = self.repository.get_by_id(product_id)
 
         if product is None:
-            raise ValueError("Produto não encontrado.")
+            raise NotFoundError("Produto não encontrado.")
 
         if data.category_id is not None:
             self._validate_relationships(data.category_id, product.flavor_id)
@@ -98,7 +99,7 @@ class ProductService:
         product = self.repository.get_by_id(product_id)
 
         if product is None:
-            raise ValueError("Produto não encontrado.")
+            raise NotFoundError("Produto não encontrado.")
 
         self.repository.delete(product)
         self.db.commit()
