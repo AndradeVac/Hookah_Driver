@@ -11,6 +11,9 @@ from app.models.order import Order
 from app.repositories.customer import CustomerRepository
 from app.schemas.order import OrderCreate, OrderItemCreate
 from app.schemas.public_order import PublicOrderCreate, PublicOrderResponse, PublicOrderTracking
+from app.schemas.audit import PublicHistoryOrder, PublicHistoryItem
+from sqlalchemy import desc
+from sqlalchemy.orm import selectinload
 from app.services.order import OrderService
 
 
@@ -62,3 +65,12 @@ def track_public_order(public_token: UUID, db: Session = Depends(get_db)):
     if order is None:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
     return PublicOrderTracking(order_number=order.order_number, status=order.status.value, total=str(order.total), created_at=order.created_at.isoformat())
+
+
+@router.get("/history", response_model=list[PublicHistoryOrder])
+def public_order_history(phone: str, db: Session = Depends(get_db)):
+    customer = CustomerRepository(db).get_by_phone(phone)
+    if customer is None:
+        return []
+    orders = db.query(Order).options(selectinload(Order.items)).filter(Order.customer_id == customer.id).order_by(desc(Order.created_at)).limit(20).all()
+    return [PublicHistoryOrder(order_number=order.order_number, status=order.status.value, total=str(order.total), created_at=order.created_at, items=[PublicHistoryItem(product_id=item.product_id, product_name=item.product_name, quantity=item.quantity, notes=item.notes) for item in order.items]) for order in orders]

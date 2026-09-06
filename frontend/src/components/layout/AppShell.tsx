@@ -11,6 +11,7 @@ import {
   Tags,
   UsersRound,
   UserCog,
+  ShieldCheck,
   X,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -25,6 +26,7 @@ const navigation = [
   { label: 'Categorias', to: '/categories', icon: Boxes },
   { label: 'Clientes', to: '/customers', icon: UsersRound },
   { label: 'Equipe', to: '/users', icon: UserCog },
+  { label: 'Auditoria', to: '/audit', icon: ShieldCheck },
 ]
 
 export function AppShell() {

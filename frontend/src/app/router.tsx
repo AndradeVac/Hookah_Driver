@@ -10,6 +10,7 @@ const ProductsPage = lazy(() => import('../features/products/ProductsPage').then
 const FlavorsPage = lazy(() => import('../features/flavors/FlavorsPage').then((module) => ({ default: module.FlavorsPage })))
 const CustomersPage = lazy(() => import('../features/customers/CustomersPage').then((module) => ({ default: module.CustomersPage })))
 const UsersPage = lazy(() => import('../features/users/UsersPage').then((module) => ({ default: module.UsersPage })))
+const AuditPage = lazy(() => import('../features/audit/AuditPage').then((module) => ({ default: module.AuditPage })))
 const DashboardOverviewPage = lazy(() => import('../features/dashboard/DashboardOverviewPage').then((module) => ({ default: module.DashboardOverviewPage })))
 const OrderDetailPage = lazy(() => import('../features/orders/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })))
 const NewOrderPage = lazy(() => import('../features/orders/NewOrderPage').then((module) => ({ default: module.NewOrderPage })))
@@ -43,6 +44,7 @@ export function AppRouter() {
               <Route path="/flavors" element={<FlavorsPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/audit" element={<AuditPage />} />
             </Route>
           </Route>
         </Route>

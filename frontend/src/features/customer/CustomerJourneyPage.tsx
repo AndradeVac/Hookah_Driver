@@ -4,7 +4,7 @@ import { getBrands, type Brand } from '../../services/brands'
 import { getCategories, type Category } from '../../services/categories'
 import { getFlavors, type Flavor } from '../../services/flavors'
 import { getProducts, type Product } from '../../services/products'
-import { createPublicOrder, getPublicOrder, type PublicOrderResponse } from '../../services/publicOrders'
+import { createPublicOrder, getPublicOrder, getPublicOrderHistory, type PublicHistoryOrder, type PublicOrderResponse } from '../../services/publicOrders'
 import { useSearchParams } from 'react-router-dom'
 
 type Step = 'register' | 'menu' | 'category' | 'product' | 'brands' | 'flavors' | 'rosh' | 'cart' | 'customer' | 'payment' | 'success'
@@ -39,6 +39,7 @@ export function CustomerJourneyPage() {
   const [search, setSearch] = useState('')
   const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('hookah-customer-favorites') ?? '[]'))
   const [lastOrder, setLastOrder] = useState<CartItem[]>(() => JSON.parse(localStorage.getItem('hookah-customer-last-order') ?? '[]'))
+    const [history, setHistory] = useState<PublicHistoryOrder[]>([])
   const [liveStatus, setLiveStatus] = useState('RECEIVED')
 
   useEffect(() => {
@@ -81,6 +82,10 @@ export function CustomerJourneyPage() {
   async function submit() { if (!name || !phone || !cart.length) return; setSending(true); try { const created = await createPublicOrder({ customer_name: name, customer_phone: phone, payment_method: payment, items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })) }); localStorage.setItem('hookah-customer-last-order', JSON.stringify(cart)); setLastOrder(cart); setLiveStatus(created.status); setOrder(created); setStep('success') } catch { setError('Não foi possível confirmar o pedido.') } finally { setSending(false) } }
 
   function toggleFavorite(productId: string) { setFavorites((current) => { const next = current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId]; localStorage.setItem('hookah-customer-favorites', JSON.stringify(next)); return next }) }
+  async function beginMenu() { const orders = await getPublicOrderHistory(phone).catch(() => []); setHistory(orders); setStep('menu') }
+  function repeatHistoryOrder(historyOrder: PublicHistoryOrder) { const repeated: CartItem[] = historyOrder.items.flatMap((item) => { const product = products.find((candidate) => candidate.id === item.product_id); return product ? [{ product, quantity: item.quantity, notes: item.notes ?? undefined }] : [] }); setCart(repeated); setStep('cart') }
+  {step === 'register' && <section className="customer-panel customer-register"><h2>Como podemos te chamar?</h2><label>Nome<input placeholder="João Vitor" value={name} onChange={(event) => setName(event.target.value)} /></label><label>WhatsApp<input placeholder="(11) 99999-9999" value={phone} onChange={(event) => setPhone(event.target.value)} /></label><small>Usaremos esses dados apenas para identificar e acompanhar seu pedido.</small><button className="customer-primary" disabled={!name.trim() || !phone.trim()} onClick={() => void beginMenu()}>Continuar <ArrowRight size={16} /></button></section>}
+  {step === 'menu' && <section className="journey-menu"><label className="customer-search"><Search size={16} /><input placeholder="Buscar produtos" value={search} onChange={(event) => setSearch(event.target.value)} /></label><div className="journey-feature"><img src={fruitImage} alt="Rosh com frutas" /><div><span>Mais pedidos</span><h2>Rosh</h2><p>Escolha uma marca e descubra os sabores.</p><button onClick={() => setStep('brands')}>Escolher Rosh <ArrowRight size={16} /></button></div></div>{history.length > 0 && <div className="journey-history"><h3>Pedidos anteriores</h3>{history.slice(0, 3).map((item) => <button key={item.order_number} onClick={() => repeatHistoryOrder(item)}><History size={16} /><span>Pedido #{item.order_number} · {money(item.total)}</span><RotateCcw size={15} /></button>)}</div>}{lastOrder.length > 0 && <button className="journey-reorder" onClick={() => { setCart(lastOrder); setStep('cart') }}><History size={16} /> Repetir último pedido <RotateCcw size={15} /></button>}<h3>Categorias</h3><div className="journey-categories">{categories.filter((item) => !['rosh', 'essências'].includes(item.name.toLowerCase())).map((category) => <button key={category.id} onClick={() => { setSelectedCategory(category); setStep('category') }}><img src={imageFor(category.name)} alt="" /><span>{category.name}</span><ChevronRight size={16} /></button>)}</div></section>}
 
   if (loading) return <div className="customer-loading"><LoaderCircle className="spin" size={22} />Abrindo seu cardápio...</div>
   const headerTitle = { register: 'Antes de começar', menu: 'Cardápio', category: selectedCategory?.name ?? 'Produtos', product: selectedProduct?.name ?? 'Produto', brands: 'Marcas', flavors: 'Sabores', rosh: 'Seu Rosh', cart: 'Seu pedido', customer: 'Confirmar pedido', payment: 'Pagamento', success: 'Pedido confirmado' }[step]
