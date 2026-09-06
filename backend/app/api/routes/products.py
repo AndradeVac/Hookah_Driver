@@ -29,7 +29,14 @@ def create_product(
 ):
     service = ProductService(db)
 
-    return service.create(data)
+    try:
+        return service.create(data)
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error),
+        )
 
 
 @router.get(
