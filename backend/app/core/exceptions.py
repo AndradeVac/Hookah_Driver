@@ -9,6 +9,18 @@ class BrandNotFoundError(Exception):
 
 def register_exception_handlers(app: FastAPI):
 
+    @app.exception_handler(ValueError)
+    async def value_error_handler(
+        request: Request,
+        exc: ValueError,
+    ):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "detail": str(exc),
+            },
+        )
+
     @app.exception_handler(BrandNotFoundError)
     async def brand_not_found_handler(
         request: Request,
