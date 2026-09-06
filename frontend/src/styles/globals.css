@@ -23,6 +23,7 @@
   --accent-strong: #efb84b;
   --accent-soft: rgba(243, 200, 106, 0.12);
   --success: #5fe19d;
+  --tech-blue: #64c8ff;
   --danger: #ef5d5d;
   --warning: #f5c45d;
   --shadow: rgba(4, 8, 10, 0.32);
@@ -543,6 +544,32 @@ button { cursor: pointer; }
   font-weight: 800;
 }
 
+.orders-column:nth-child(1) .orders-column-heading {
+  border-color: rgba(243, 200, 106, 0.22);
+}
+
+.orders-column:nth-child(1) .orders-column-heading span {
+  background: rgba(243, 200, 106, 0.14);
+}
+
+.orders-column:nth-child(2) .orders-column-heading {
+  border-color: rgba(100, 200, 255, 0.2);
+}
+
+.orders-column:nth-child(2) .orders-column-heading span {
+  background: rgba(100, 200, 255, 0.13);
+  color: var(--tech-blue);
+}
+
+.orders-column:nth-child(3) .orders-column-heading {
+  border-color: rgba(95, 225, 157, 0.2);
+}
+
+.orders-column:nth-child(3) .orders-column-heading span {
+  background: rgba(95, 225, 157, 0.13);
+  color: var(--success);
+}
+
 .orders-list {
   display: flex;
   flex-direction: column;
@@ -649,18 +676,23 @@ button { cursor: pointer; }
 }
 
 .order-action-received {
-  background: linear-gradient(135deg, #f26d6d 0%, #d84d4d 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, #dba941 100%);
+  color: #11150f;
+  box-shadow: 0 0 18px rgba(243, 200, 106, 0.12);
 }
 
 .order-action-preparing {
-  background: rgba(255,255,255,0.08);
-  color: #f0f3f1;
+  background: rgba(100, 200, 255, 0.12);
+  color: var(--tech-blue);
+  border: 1px solid rgba(100, 200, 255, 0.22);
+  box-shadow: 0 0 18px rgba(100, 200, 255, 0.08);
 }
 
 .order-action-ready {
   background: rgba(95, 225, 157, 0.14);
   color: var(--success);
+  border: 1px solid rgba(95, 225, 157, 0.22);
+  box-shadow: 0 0 18px rgba(95, 225, 157, 0.08);
 }
 
 .orders-empty {
