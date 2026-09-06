@@ -1,0 +1,77 @@
+from decimal import Decimal
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from app.core.exceptions import NotFoundError
+from app.models.order import Order, OrderStatus
+from app.models.order_item import OrderItem
+from app.models.order_status_history import OrderStatusHistory
+from app.repositories.customer import CustomerRepository
+from app.repositories.order import OrderRepository
+from app.repositories.product import ProductRepository
+from app.schemas.order import OrderCreate
+
+
+class OrderService:
+    def __init__(self, db: Session):
+        self.repository = OrderRepository(db)
+        self.customer_repository = CustomerRepository(db)
+        self.product_repository = ProductRepository(db)
+        self.db = db
+
+    def create(self, data: OrderCreate) -> Order:
+        customer = self.customer_repository.get_by_id(data.customer_id)
+        if customer is None:
+            raise NotFoundError("Cliente não encontrado.")
+
+        subtotal = Decimal("0.00")
+        order = Order(
+            customer_id=customer.id,
+            payment_method=data.payment_method,
+            status=OrderStatus.RECEIVED,
+            subtotal=Decimal("0.00"),
+            total=Decimal("0.00"),
+        )
+
+        for item_data in data.items:
+            product = self.product_repository.get_by_id(item_data.product_id)
+            if product is None:
+                raise NotFoundError(
+                    f"Produto não encontrado: {item_data.product_id}."
+                )
+
+            unit_price = product.price
+            total_price = (unit_price * item_data.quantity).quantize(
+                Decimal("0.01")
+            )
+            subtotal += total_price
+            order.items.append(
+                OrderItem(
+                    product_id=product.id,
+                    product_name=product.name,
+                    quantity=item_data.quantity,
+                    unit_price=unit_price,
+                    total_price=total_price,
+                    notes=item_data.notes,
+                )
+            )
+
+        order.subtotal = subtotal
+        order.total = subtotal
+        order.status_history.append(
+            OrderStatusHistory(status=OrderStatus.RECEIVED)
+        )
+
+        self.repository.create(order)
+        self.db.commit()
+        return order
+
+    def get_by_id(self, order_id: UUID) -> Order:
+        order = self.repository.get_by_id(order_id)
+        if order is None:
+            raise NotFoundError("Pedido não encontrado.")
+        return order
+
+    def get_all(self) -> list[Order]:
+        return self.repository.get_all()

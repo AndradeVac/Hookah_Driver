@@ -13,6 +13,7 @@ from sqlalchemy import (
     Numeric,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -55,6 +56,7 @@ class Order(Base):
     order_number: Mapped[int] = mapped_column(
         BigInteger,
         nullable=False,
+        server_default=text("nextval('orders_order_number_seq'::regclass)"),
     )
 
     customer_id: Mapped[uuid.UUID] = mapped_column(
@@ -71,6 +73,7 @@ class Order(Base):
         ),
         nullable=False,
         default=OrderStatus.RECEIVED,
+        server_default=text("'RECEIVED'::order_status"),
     )
 
     payment_method: Mapped[PaymentMethod] = mapped_column(
