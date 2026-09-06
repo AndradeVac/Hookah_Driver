@@ -12,8 +12,8 @@ class PublicOrderItem(BaseModel):
 
 
 class PublicOrderCreate(BaseModel):
-    customer_name: str = Field(min_length=1, max_length=150)
-    customer_phone: str = Field(min_length=8, max_length=30)
+    customer_name: str = Field(min_length=2, max_length=150)
+    customer_phone: str = Field(pattern=r"^\+?[0-9\s().-]{10,20}$")
     payment_method: PaymentMethod = PaymentMethod.PIX
     items: list[PublicOrderItem] = Field(min_length=1, max_length=30)
 

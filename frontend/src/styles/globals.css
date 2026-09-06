@@ -1,4 +1,5 @@
 ﻿.customer-register small { display:block; color:var(--text-muted); font-size:10px; line-height:1.5; }
+.customer-register .customer-validation { color:#ffb1b1; }
 .journey-menu, .journey-panel { width:min(100%,720px); margin:0 auto; }
 .journey-feature { display:flex; gap:18px; align-items:center; overflow:hidden; }
 .journey-feature img { width:130px; height:130px; flex:0 0 130px; object-fit:cover; border-radius:12px; }
