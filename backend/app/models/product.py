@@ -2,7 +2,17 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,6 +21,12 @@ from app.core.database import Base
 
 class Product(Base):
     __tablename__ = "products"
+    __table_args__ = (
+        CheckConstraint("price >= 0", name="chk_products_price"),
+        Index("idx_products_active", "active"),
+        Index("idx_products_category_id", "category_id"),
+        Index("idx_products_flavor_id", "flavor_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -20,13 +36,13 @@ class Product(Base):
 
     category_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("categories.id"),
+        ForeignKey("categories.id", name="fk_products_category", ondelete="RESTRICT"),
         nullable=False,
     )
 
     flavor_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("flavors.id"),
+        ForeignKey("flavors.id", name="fk_products_flavor", ondelete="RESTRICT"),
         nullable=True,
     )
 

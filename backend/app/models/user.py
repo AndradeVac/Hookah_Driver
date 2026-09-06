@@ -26,6 +26,7 @@ class User(Base):
         String,
         nullable=False,
         unique=True,
+        name="email",
     )
 
     password_hash: Mapped[str] = mapped_column(

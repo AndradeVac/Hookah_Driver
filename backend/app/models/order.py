@@ -3,7 +3,17 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, func
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Numeric,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,6 +37,14 @@ class PaymentMethod(str, enum.Enum):
 
 class Order(Base):
     __tablename__ = "orders"
+    __table_args__ = (
+        CheckConstraint("subtotal >= 0", name="chk_orders_subtotal"),
+        CheckConstraint("total >= 0", name="chk_orders_total"),
+        Index("idx_orders_created_at", "created_at"),
+        Index("idx_orders_customer_id", "customer_id"),
+        Index("idx_orders_status", "status"),
+        UniqueConstraint("order_number", name="orders_order_number_key"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -35,12 +53,13 @@ class Order(Base):
     )
 
     order_number: Mapped[int] = mapped_column(
+        BigInteger,
         nullable=False,
     )
 
     customer_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("customers.id"),
+        ForeignKey("customers.id", name="fk_orders_customer", ondelete="RESTRICT"),
         nullable=False,
     )
 

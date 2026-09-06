@@ -2,7 +2,17 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +22,12 @@ from app.models.product import Product
 
 class OrderItem(Base):
     __tablename__ = "order_items"
+    __table_args__ = (
+        CheckConstraint("quantity > 0", name="chk_order_items_quantity"),
+        CheckConstraint("total_price >= 0", name="chk_order_items_total_price"),
+        CheckConstraint("unit_price >= 0", name="chk_order_items_unit_price"),
+        Index("idx_order_items_order_id", "order_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -21,13 +37,13 @@ class OrderItem(Base):
 
     order_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("orders.id"),
+        ForeignKey("orders.id", name="fk_order_items_order", ondelete="CASCADE"),
         nullable=False,
     )
 
     product_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("products.id"),
+        ForeignKey("products.id", name="fk_order_items_product", ondelete="RESTRICT"),
         nullable=False,
     )
 

@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -11,6 +20,10 @@ from app.models.brand import Brand
 
 class Flavor(Base):
     __tablename__ = "flavors"
+    __table_args__ = (
+        Index("idx_flavors_brand_id", "brand_id"),
+        UniqueConstraint("brand_id", "name", name="uq_flavor_brand"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -20,7 +33,7 @@ class Flavor(Base):
 
     brand_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("brands.id"),
+        ForeignKey("brands.id", name="fk_flavors_brand", ondelete="RESTRICT"),
         nullable=False,
     )
 

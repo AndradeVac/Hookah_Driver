@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, func, text
+from sqlalchemy import Boolean, DateTime, String, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -10,6 +10,9 @@ from app.core.database import Base
 
 class Brand(Base):
     __tablename__ = "brands"
+    __table_args__ = (
+        UniqueConstraint("name", name="brands_name_key"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
     UUID(as_uuid=True),

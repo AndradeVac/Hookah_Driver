@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,6 +13,9 @@ from app.models.order import Order
 
 class OrderStatusHistory(Base):
     __tablename__ = "order_status_history"
+    __table_args__ = (
+        Index("idx_order_status_history_order_id", "order_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -22,7 +25,7 @@ class OrderStatusHistory(Base):
 
     order_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("orders.id"),
+        ForeignKey("orders.id", name="fk_status_history_order", ondelete="CASCADE"),
         nullable=False,
     )
 
@@ -37,7 +40,7 @@ class OrderStatusHistory(Base):
 
     changed_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.id"),
+        ForeignKey("users.id", name="fk_status_history_user", ondelete="SET NULL"),
         nullable=True,
     )
 
