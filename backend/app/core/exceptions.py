@@ -11,7 +11,22 @@ class BusinessRuleError(ValueError):
     pass
 
 
+class AuthenticationError(ValueError):
+    pass
+
+
 def register_exception_handlers(app: FastAPI):
+
+    @app.exception_handler(AuthenticationError)
+    async def authentication_handler(
+        request: Request,
+        exc: AuthenticationError,
+    ):
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": str(exc)},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     @app.exception_handler(BusinessRuleError)
     async def business_rule_handler(

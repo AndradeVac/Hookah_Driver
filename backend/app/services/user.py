@@ -1,0 +1,45 @@
+from sqlalchemy.orm import Session
+
+from app.core.exceptions import NotFoundError
+from app.core.exceptions import AuthenticationError
+from app.models.user import User
+from app.repositories.user import UserRepository
+from app.schemas.user import UserCreate
+from pwdlib import PasswordHash
+
+
+class UserService:
+    password_hash = PasswordHash.recommended()
+
+    def __init__(self, db: Session):
+        self.repository = UserRepository(db)
+        self.db = db
+
+    def create(self, data: UserCreate) -> User:
+        user = User(
+            name=data.name,
+            email=data.email.lower(),
+            password_hash=self.password_hash.hash(data.password),
+            role=data.role,
+        )
+        self.repository.create(user)
+        self.db.commit()
+        return user
+
+    def get_by_id(self, user_id):
+        user = self.repository.get_by_id(user_id)
+        if user is None:
+            raise NotFoundError("Usuário não encontrado.")
+        return user
+
+    def get_all(self) -> list[User]:
+        return self.repository.get_all()
+
+    def verify_password(self, plain_password: str, password_hash: str) -> bool:
+        return self.password_hash.verify(plain_password, password_hash)
+
+    def authenticate(self, email: str, password: str) -> User:
+        user = self.repository.get_by_email(email.lower())
+        if user is None or not self.verify_password(password, user.password_hash):
+            raise AuthenticationError("E-mail ou senha inválidos.")
+        return user
