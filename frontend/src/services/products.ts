@@ -8,9 +8,21 @@ export type Product = {
   description: string | null
   price: string
   active: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export async function getProducts() {
   const { data } = await api.get<Product[]>('/products')
+  return data
+}
+
+export async function createProduct(payload: {
+  category_id: string
+  name: string
+  description?: string
+  price: string
+}) {
+  const { data } = await api.post<Product>('/products', payload)
   return data
 }
