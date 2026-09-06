@@ -1,5 +1,3 @@
-import { ShoppingBag } from 'lucide-react'
-
 const newOrders = [
   { id: '123', customer: 'João Vítor', place: 'Pedido no Lounge', flavor: 'Rosh', product: 'ZIGGY · Banana', price: 'R$ 60,00', accent: 'new' },
   { id: '124', customer: 'Vitor', place: 'Pedido no Lounge', flavor: 'Rosh', product: 'ZOMO · Laranja', price: 'R$ 50,00', accent: 'new' },
@@ -49,7 +47,9 @@ export function OrdersPage() {
                     <span className="product-name">{order.product}</span>
                   </div>
 
-                  <div className="order-price">R$ {order.price.replace('R$ ', '')}</div>
+                  <div className="order-meta">
+                    <span className="order-price">R$ {order.price.replace('R$ ', '')}</span>
+                  </div>
 
                   <button className={`order-action order-action-${order.accent}`}>
                     {order.accent === 'new' ? 'Aceitar pedido' : order.accent === 'prep' ? 'Marcar como pronto' : 'Entregar'}

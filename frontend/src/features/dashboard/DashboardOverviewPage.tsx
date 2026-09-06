@@ -1,10 +1,10 @@
 import { ArrowUpRight, BarChart3, ChartColumnBig, ShoppingCart, Users } from 'lucide-react'
 
 const metrics = [
-  { label: 'Faturamento', value: 'R$ 2.840', icon: ShoppingCart },
-  { label: 'Pedidos', value: '57', icon: BarChart3 },
-  { label: 'Ticket médio', value: 'R$ 49,82', icon: ChartColumnBig },
-  { label: 'Mais vendido', value: 'Rosh Banana', icon: Users },
+  { label: 'Faturamento', value: 'R$ 2.840', delta: '+14,2%', icon: ShoppingCart },
+  { label: 'Pedidos', value: '57', delta: '+8 hoje', icon: BarChart3 },
+  { label: 'Ticket médio', value: 'R$ 49,82', delta: '+3,6%', icon: ChartColumnBig },
+  { label: 'Mais vendido', value: 'Rosh Banana', delta: '83 pedidos', icon: Users },
 ]
 
 const hours = [18, 19, 20, 21, 22, 23]
@@ -21,11 +21,14 @@ export function DashboardOverviewPage() {
       </div>
 
       <div className="metrics-grid">
-        {metrics.map(({ label, value, icon: Icon }) => (
+        {metrics.map(({ label, value, delta, icon: Icon }) => (
           <article key={label} className="metric-tech-card">
-            <span>{label}</span>
+            <div className="metric-card-top">
+              <span>{label}</span>
+              <div className="metric-icon"><Icon size={17} /></div>
+            </div>
             <strong>{value}</strong>
-            <Icon size={18} />
+            <small>{delta}</small>
           </article>
         ))}
       </div>
@@ -36,7 +39,7 @@ export function DashboardOverviewPage() {
           <div className="bars">
             {hours.map((hour, index) => (
               <div key={hour} className="bar-wrap">
-                <span className="bar" style={{ height: `${42 + (index * 12) % 60}%` }} />
+                <span className="bar" style={{ height: `${40 + (index * 12) % 60}%` }} />
                 <small>{hour}h</small>
               </div>
             ))}
@@ -46,9 +49,9 @@ export function DashboardOverviewPage() {
         <article className="rank-card">
           <h3>Produtos mais vendidos</h3>
           <ol>
-            <li><span>1. Rosh Banana</span><strong>83 pedidos</strong></li>
-            <li><span>2. Rosh Laranja</span><strong>61 pedidos</strong></li>
-            <li><span>3. Rosh Morango</span><strong>54 pedidos</strong></li>
+            <li><span className="rank-name">1. Rosh Banana</span><strong className="rank-total">83 pedidos</strong></li>
+            <li><span className="rank-name">2. Rosh Laranja</span><strong className="rank-total">61 pedidos</strong></li>
+            <li><span className="rank-name">3. Rosh Morango</span><strong className="rank-total">54 pedidos</strong></li>
           </ol>
         </article>
       </div>

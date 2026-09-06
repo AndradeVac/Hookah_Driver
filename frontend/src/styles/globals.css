@@ -338,7 +338,7 @@ button { cursor: pointer; }
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .metric-tech-card {
@@ -351,6 +351,13 @@ button { cursor: pointer; }
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
 }
 
+.metric-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .metric-tech-card span {
   display: block;
   color: var(--text-soft);
@@ -359,18 +366,28 @@ button { cursor: pointer; }
 
 .metric-tech-card strong {
   display: block;
-  margin-top: 18px;
+  margin-top: 16px;
   color: #f6f7f4;
   font-size: clamp(20px, 2vw, 28px);
   font-weight: 700;
 }
 
-.metric-tech-card svg {
-  position: absolute;
-  right: 16px;
-  bottom: 14px;
+.metric-tech-card small {
+  display: inline-block;
+  margin-top: 10px;
   color: var(--accent);
-  opacity: 0.9;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.metric-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(243, 200, 106, 0.1);
+  color: var(--accent);
 }
 
 .analytics-grid {
@@ -444,7 +461,11 @@ button { cursor: pointer; }
   color: #eff2ef;
 }
 
-.rank-card li strong {
+.rank-name {
+  color: rgba(255,255,255,0.88);
+}
+
+.rank-total {
   color: rgba(255,255,255,0.7);
   font-size: 11px;
   font-weight: 500;
@@ -558,6 +579,12 @@ button { cursor: pointer; }
   color: #f3f4f2;
   font-size: 17px;
   font-weight: 700;
+}
+
+.order-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .order-price {

@@ -1,5 +1,3 @@
-import { Clock3 } from 'lucide-react'
-
 const timeline = [
   { label: 'Pedido recebido', time: '17:42', active: true },
   { label: 'Aceito', time: '17:43', active: true },
@@ -40,14 +38,14 @@ export function OrderDetailPage() {
             <strong>R$ 60,00</strong>
           </div>
 
-          <button className="primary-button dark-warning">EM PREPARO</button>
+          <button className="primary-button">EM PREPARO</button>
           <button className="danger-button">Marcar como pronto</button>
         </article>
 
         <aside className="detail-panel detail-panel-side">
           <h3>Linha do tempo</h3>
           <ul className="timeline">
-            {timeline.map((item, index) => (
+            {timeline.map((item) => (
               <li key={item.label} className={item.active ? 'active' : ''}>
                 <span className="dot" />
                 <span className="timeline-label">{item.label}</span>
