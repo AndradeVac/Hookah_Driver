@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_roles
+from app.models.user import User, UserRole
 from app.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
 from app.services.order import OrderService
 
@@ -18,6 +20,7 @@ router = APIRouter(
 def create_order(
     data: OrderCreate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
     return OrderService(db).create(data)
 
@@ -40,5 +43,6 @@ def update_order_status(
     order_id: UUID,
     data: OrderStatusUpdate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
     return OrderService(db).update_status(order_id, data)

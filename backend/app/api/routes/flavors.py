@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_roles
+from app.models.user import User, UserRole
 from app.schemas.flavor import (
     FlavorCreate,
     FlavorResponse,
@@ -26,6 +28,7 @@ router = APIRouter(
 def create_flavor(
     data: FlavorCreate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = FlavorService(db)
 
@@ -71,6 +74,7 @@ def update_flavor(
     flavor_id: UUID,
     data: FlavorUpdate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = FlavorService(db)
 
@@ -87,6 +91,7 @@ def update_flavor(
 def delete_flavor(
     flavor_id: UUID,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = FlavorService(db)
 

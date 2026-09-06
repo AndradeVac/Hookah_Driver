@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_roles
+from app.models.user import User, UserRole
 from app.schemas.customer import CustomerCreate, CustomerResponse, CustomerUpdate
 from app.services.customer import CustomerService
 
@@ -18,6 +20,7 @@ router = APIRouter(
 def create_customer(
     data: CustomerCreate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
     return CustomerService(db).create(data)
 
@@ -40,6 +43,7 @@ def update_customer(
     customer_id: UUID,
     data: CustomerUpdate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
     return CustomerService(db).update(customer_id, data)
 
@@ -48,5 +52,6 @@ def update_customer(
 def delete_customer(
     customer_id: UUID,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
     return CustomerService(db).delete(customer_id)

@@ -11,6 +11,9 @@ from app.models.category import Category
 from app.models.customer import Customer
 from app.models.order import Order
 from app.models.product import Product
+from app.models.user import User, UserRole
+from app.schemas.user import UserCreate
+from app.services.user import UserService
 
 
 @pytest.mark.integration
@@ -46,6 +49,15 @@ async def test_orders_api_end_to_end():
             price=Decimal("5.00"),
             active=False,
         )
+        operator_email = f"integration-operator-{suffix}@example.com"
+        operator = UserService(db).create(
+            UserCreate(
+                name="Integration Operator",
+                email=operator_email,
+                password="senha-integration",
+                role=UserRole.OPERATOR,
+            )
+        )
         db.add_all(
             [customer, inactive_customer, first_product, second_product, inactive_product]
         )
@@ -68,6 +80,7 @@ async def test_orders_api_end_to_end():
             "second_product": second_product.id,
             "inactive_product": inactive_product.id,
             "category": category.id,
+            "operator": operator.id,
         }
 
     try:
@@ -76,8 +89,19 @@ async def test_orders_api_end_to_end():
             transport=transport,
             base_url="http://testserver",
         ) as client:
+            login = await client.post(
+                "/auth/login",
+                json={
+                    "email": operator_email,
+                    "password": "senha-integration",
+                },
+            )
+            assert login.status_code == 200, login.text
+            headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
             created = await client.post(
                 "/orders",
+                headers=headers,
                 json={
                     "customer_id": customer_id,
                     "payment_method": "PIX",
@@ -102,6 +126,7 @@ async def test_orders_api_end_to_end():
             for next_status in ("PREPARING", "READY", "FINISHED"):
                 response = await client.patch(
                     f"/orders/{order['id']}/status",
+                    headers=headers,
                     json={"status": next_status},
                 )
                 assert response.status_code == 200, response.text
@@ -109,12 +134,14 @@ async def test_orders_api_end_to_end():
             for invalid_status in ("PREPARING", "CANCELLED"):
                 response = await client.patch(
                     f"/orders/{order['id']}/status",
+                    headers=headers,
                     json={"status": invalid_status},
                 )
                 assert response.status_code == 422, response.text
 
             cancelled_order = await client.post(
                 "/orders",
+                headers=headers,
                 json={
                     "customer_id": customer_id,
                     "payment_method": "CASH",
@@ -127,11 +154,13 @@ async def test_orders_api_end_to_end():
             assert (
                 await client.patch(
                     f"/orders/{cancelled_id}/status",
+                    headers=headers,
                     json={"status": "CANCELLED"},
                 )
             ).status_code == 200
             invalid_after_cancel = await client.patch(
                 f"/orders/{cancelled_id}/status",
+                headers=headers,
                 json={"status": "READY"},
             )
             assert invalid_after_cancel.status_code == 422
@@ -165,7 +194,7 @@ async def test_orders_api_end_to_end():
                 }, 422),
             ]
             for payload, expected_status in invalid_requests:
-                response = await client.post("/orders", json=payload)
+                response = await client.post("/orders", headers=headers, json=payload)
                 assert response.status_code == expected_status, response.text
     finally:
         with SessionLocal() as db:
@@ -177,4 +206,5 @@ async def test_orders_api_end_to_end():
             db.execute(delete(Customer).where(Customer.id.in_(
                 [temporary_ids["customer"], temporary_ids["inactive_customer"]]
             )))
+            db.execute(delete(User).where(User.id == temporary_ids["operator"]))
             db.commit()

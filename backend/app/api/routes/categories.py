@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_roles
+from app.models.user import User, UserRole
 from app.schemas.category import (
     CategoryCreate,
     CategoryResponse,
@@ -26,6 +28,7 @@ router = APIRouter(
 def create_category(
     data: CategoryCreate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = CategoryService(db)
 
@@ -65,6 +68,7 @@ def update_category(
     category_id: UUID,
     data: CategoryUpdate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = CategoryService(db)
 
@@ -81,6 +85,7 @@ def update_category(
 def delete_category(
     category_id: UUID,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = CategoryService(db)
 

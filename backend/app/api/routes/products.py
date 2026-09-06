@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_roles
+from app.models.user import User, UserRole
 from app.schemas.product import (
     ProductCreate,
     ProductResponse,
@@ -26,6 +28,7 @@ router = APIRouter(
 def create_product(
     data: ProductCreate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = ProductService(db)
 
@@ -79,6 +82,7 @@ def update_product(
     product_id: UUID,
     data: ProductUpdate,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = ProductService(db)
 
@@ -102,6 +106,7 @@ def update_product(
 def delete_product(
     product_id: UUID,
     db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     service = ProductService(db)
 
