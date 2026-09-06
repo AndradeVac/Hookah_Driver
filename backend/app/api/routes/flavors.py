@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -29,7 +29,10 @@ def create_flavor(
 ):
     service = FlavorService(db)
 
-    return service.create(data)
+    try:
+        return service.create(data)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
 
 
 @router.get(
@@ -54,7 +57,10 @@ def get_flavor(
 ):
     service = FlavorService(db)
 
-    return service.get_by_id(flavor_id)
+    try:
+        return service.get_by_id(flavor_id)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
 
 
 @router.patch(
@@ -68,10 +74,10 @@ def update_flavor(
 ):
     service = FlavorService(db)
 
-    return service.update(
-        flavor_id,
-        data,
-    )
+    try:
+        return service.update(flavor_id, data)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
 
 
 @router.delete(
@@ -84,4 +90,7 @@ def delete_flavor(
 ):
     service = FlavorService(db)
 
-    return service.delete(flavor_id)
+    try:
+        return service.delete(flavor_id)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))

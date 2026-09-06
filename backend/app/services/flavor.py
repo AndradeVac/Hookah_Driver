@@ -15,11 +15,14 @@ class FlavorService:
         self.brand_repository = BrandRepository(db)
         self.db = db
 
-    def create(self, data: FlavorCreate) -> Flavor:
-        brand = self.brand_repository.get_by_id(data.brand_id)
+    def _validate_brand(self, brand_id: UUID) -> None:
+        brand = self.brand_repository.get_by_id(brand_id)
 
-        if brand is None:
-            raise ValueError("Marca não encontrada.")
+        if brand is None or not brand.active:
+            raise ValueError("Marca não encontrada ou inativa.")
+
+    def create(self, data: FlavorCreate) -> Flavor:
+        self._validate_brand(data.brand_id)
 
         flavor = Flavor(
             brand_id=data.brand_id,
@@ -55,11 +58,7 @@ class FlavorService:
             raise ValueError("Sabor não encontrado.")
 
         if data.brand_id is not None:
-            brand = self.brand_repository.get_by_id(data.brand_id)
-
-            if brand is None:
-                raise ValueError("Marca não encontrada.")
-
+            self._validate_brand(data.brand_id)
             flavor.brand_id = data.brand_id
 
         if data.name is not None:
