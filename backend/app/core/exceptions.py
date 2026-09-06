@@ -7,11 +7,27 @@ class NotFoundError(ValueError):
     pass
 
 
+class BusinessRuleError(ValueError):
+    pass
+
+
 class BrandNotFoundError(NotFoundError):
     pass
 
 
 def register_exception_handlers(app: FastAPI):
+
+    @app.exception_handler(BusinessRuleError)
+    async def business_rule_handler(
+        request: Request,
+        exc: BusinessRuleError,
+    ):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={
+                "detail": str(exc),
+            },
+        )
 
     @app.exception_handler(NotFoundError)
     async def not_found_handler(

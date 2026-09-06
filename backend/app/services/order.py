@@ -3,7 +3,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import BusinessRuleError, NotFoundError
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
@@ -93,7 +93,7 @@ class OrderService:
         allowed = self.allowed_transitions[order.status]
 
         if data.status not in allowed:
-            raise ValueError(
+            raise BusinessRuleError(
                 f"Não é possível alterar {order.status.value} para {data.status.value}."
             )
 
