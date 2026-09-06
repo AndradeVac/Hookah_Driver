@@ -927,6 +927,34 @@ button { cursor: pointer; }
   }
 }
 
+.customer-form-grid {
+  grid-template-columns: 1.2fr 1fr auto;
+}
+
+.resource-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 2px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 9px;
+  color: var(--text-muted);
+}
+
+.resource-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.customer-row {
+  margin-top: 2px;
+}
+
 .resource-list-header,
 .resource-row {
   display: flex;
