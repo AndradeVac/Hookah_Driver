@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useAuth } from '../../features/auth/AuthProvider'
 
 const navigation = [
   { label: 'Visão geral', to: '/', icon: LayoutDashboard },
@@ -26,6 +27,7 @@ const navigation = [
 
 export function AppShell() {
   const [open, setOpen] = useState(false)
+  const { user, logout } = useAuth()
 
   return (
     <div className="app-shell">
@@ -69,7 +71,7 @@ export function AppShell() {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-chip"><CircleUserRound size={22} /><div><strong>Administrador</strong><span>Conta principal</span></div></div>
+          <div className="user-chip"><CircleUserRound size={22} /><div><strong>{user?.name ?? 'Usuário'}</strong><span>{user?.role === 'ADMIN' ? 'Administrador' : 'Operador'}</span></div><button className="logout-button" onClick={logout}>Sair</button></div>
         </div>
       </aside>
       {open && <button className="sidebar-overlay" onClick={() => setOpen(false)} aria-label="Fechar menu" />}
