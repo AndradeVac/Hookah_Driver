@@ -10,10 +10,18 @@ from app.models.order_status_history import OrderStatusHistory
 from app.repositories.customer import CustomerRepository
 from app.repositories.order import OrderRepository
 from app.repositories.product import ProductRepository
-from app.schemas.order import OrderCreate
+from app.schemas.order import OrderCreate, OrderStatusUpdate
 
 
 class OrderService:
+    allowed_transitions = {
+        OrderStatus.RECEIVED: {OrderStatus.PREPARING, OrderStatus.CANCELLED},
+        OrderStatus.PREPARING: {OrderStatus.READY, OrderStatus.CANCELLED},
+        OrderStatus.READY: {OrderStatus.FINISHED, OrderStatus.CANCELLED},
+        OrderStatus.FINISHED: set(),
+        OrderStatus.CANCELLED: set(),
+    }
+
     def __init__(self, db: Session):
         self.repository = OrderRepository(db)
         self.customer_repository = CustomerRepository(db)
@@ -75,3 +83,24 @@ class OrderService:
 
     def get_all(self) -> list[Order]:
         return self.repository.get_all()
+
+    def update_status(
+        self,
+        order_id: UUID,
+        data: OrderStatusUpdate,
+    ) -> Order:
+        order = self.get_by_id(order_id)
+        allowed = self.allowed_transitions[order.status]
+
+        if data.status not in allowed:
+            raise ValueError(
+                f"Não é possível alterar {order.status.value} para {data.status.value}."
+            )
+
+        order.status = data.status
+        order.status_history.append(
+            OrderStatusHistory(status=data.status)
+        )
+        self.repository.update(order)
+        self.db.commit()
+        return order
