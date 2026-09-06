@@ -28,7 +28,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
     order = OrderService(db).create(OrderCreate(
         customer_id=customer.id,
         payment_method=data.payment_method,
-        items=[OrderItemCreate(product_id=item.product_id, quantity=item.quantity) for item in data.items],
+        items=[OrderItemCreate(product_id=item.product_id, quantity=item.quantity, notes=item.notes) for item in data.items],
     ))
     return PublicOrderResponse(order_id=order.id, order_number=order.order_number, status=order.status.value, total=str(order.total), public_token=order.public_token)
 

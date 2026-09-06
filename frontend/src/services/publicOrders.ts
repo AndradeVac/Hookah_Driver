@@ -8,7 +8,7 @@ export async function createPublicOrder(payload: {
   customer_name: string
   customer_phone: string
   payment_method: 'PIX' | 'CARD'
-  items: Array<{ product_id: string; quantity: number }>
+  items: Array<{ product_id: string; quantity: number; notes?: string }>
 }) {
   const { data } = await api.post<PublicOrderResponse>('/public/orders', payload)
   return data

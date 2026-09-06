@@ -3,12 +3,12 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from app.models.order import PaymentMethod
-from app.schemas.order import OrderItemResponse
 
 
 class PublicOrderItem(BaseModel):
     product_id: UUID
     quantity: int = Field(gt=0, le=20)
+    notes: str | None = Field(default=None, max_length=300)
 
 
 class PublicOrderCreate(BaseModel):
