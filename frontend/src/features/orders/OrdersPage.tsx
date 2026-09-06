@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowRight, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, ArrowRight, Filter, LoaderCircle, Plus, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCustomers, type Customer } from '../../services/customers'
@@ -27,6 +27,8 @@ export function OrdersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | OrderStatus>('ALL')
 
   useEffect(() => {
     Promise.all([getOrders(), getCustomers()])
@@ -54,6 +56,11 @@ export function OrdersPage() {
 
   const customerNames = useMemo(() => new Map(customers.map((customer) => [customer.id, customer.name])), [customers])
   const totalOrders = orders.length
+  const filteredOrders = useMemo(() => orders.filter((order) => {
+    const customerName = customerNames.get(order.customer_id) ?? 'Cliente'
+    const searchable = `${order.order_number} ${customerName} ${order.items.map((item) => item.product_name).join(' ')}`.toLowerCase()
+    return (statusFilter === 'ALL' || order.status === statusFilter) && searchable.includes(search.toLowerCase())
+  }), [customerNames, orders, search, statusFilter])
 
   return (
     <section className="page-content orders-page-shell">
@@ -63,9 +70,10 @@ export function OrdersPage() {
         <div className="pill-status">Hoje · {totalOrders} {totalOrders === 1 ? 'pedido' : 'pedidos'}</div>
       </div>
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
+      <div className="orders-filters"><label><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pedido, cliente ou produto" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} aria-label="Filtrar pedidos por status"><option value="ALL">Todos os status</option><option value="RECEIVED">Novos</option><option value="PREPARING">Em preparo</option><option value="READY">Prontos</option><option value="FINISHED">Finalizados</option></select>{(search || statusFilter !== 'ALL') && <button type="button" onClick={() => { setSearch(''); setStatusFilter('ALL') }}><X size={14} /> Limpar</button>}</div>
       {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando pedidos...</div> : <div className="orders-columns">
         {columns.map((column) => {
-          const columnOrders = orders.filter((order) => order.status === column.status)
+          const columnOrders = filteredOrders.filter((order) => order.status === column.status)
           return <div key={column.status} className="orders-column">
             <div className="orders-column-heading"><h3>{column.title}</h3><span>{columnOrders.length}</span></div>
             <div className="orders-list">
