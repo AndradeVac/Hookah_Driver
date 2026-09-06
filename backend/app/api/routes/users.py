@@ -41,6 +41,6 @@ def update_user_status(
     user_id: UUID,
     data: UserStatusUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    return UserService(db).update_status(user_id, data)
+    return UserService(db).update_status(user_id, data, current_user)

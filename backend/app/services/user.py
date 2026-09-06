@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import BusinessRuleError, NotFoundError
 from app.core.exceptions import AuthenticationError
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserStatusUpdate
 from pwdlib import PasswordHash
@@ -35,10 +35,14 @@ class UserService:
     def get_all(self) -> list[User]:
         return self.repository.get_all()
 
-    def update_status(self, user_id, data: UserStatusUpdate) -> User:
+    def update_status(self, user_id, data: UserStatusUpdate, actor: User) -> User:
         user = self.repository.get_by_id(user_id, include_inactive=True)
         if user is None:
             raise NotFoundError("Usuário não encontrado.")
+        if not data.active and user.id == actor.id:
+            raise BusinessRuleError("Você não pode desativar a própria conta.")
+        if not data.active and user.role is UserRole.ADMIN and self.repository.count_active_admins() <= 1:
+            raise BusinessRuleError("O sistema precisa manter pelo menos um administrador ativo.")
         user.active = data.active
         self.repository.update(user)
         self.db.commit()

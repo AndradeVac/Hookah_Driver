@@ -1,9 +1,9 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models.user import User
+from app.models.user import User, UserRole
 
 
 class UserRepository:
@@ -36,3 +36,10 @@ class UserRepository:
         self.db.flush()
         self.db.refresh(user)
         return user
+
+    def count_active_admins(self) -> int:
+        statement = select(func.count(User.id)).where(
+            User.role == UserRole.ADMIN,
+            User.active.is_(True),
+        )
+        return int(self.db.scalar(statement) or 0)
