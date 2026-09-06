@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleOff, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { getBrands, type Brand } from '../../services/brands'
 import { createFlavor, getFlavors, updateFlavorStatus, type Flavor } from '../../services/flavors'
@@ -12,6 +12,7 @@ export function FlavorsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -58,7 +59,9 @@ export function FlavorsPage() {
   }
 
   const activeBrandIds = new Set(brands.map((brand) => brand.id))
-  const flavorGroups = useMemo(() => brands.map((brand) => ({ brand, flavors: flavors.filter((flavor) => flavor.brand_id === brand.id) })).filter((group) => group.flavors.length > 0), [brands, flavors])
+  const inactiveCount = flavors.filter((flavor) => !flavor.active && activeBrandIds.has(flavor.brand_id)).length
+  const visibleFlavors = showAll ? flavors : flavors.filter((flavor) => flavor.active)
+  const flavorGroups = useMemo(() => brands.map((brand) => ({ brand, flavors: visibleFlavors.filter((flavor) => flavor.brand_id === brand.id) })).filter((group) => group.flavors.length > 0), [brands, visibleFlavors])
 
   return (
     <section className="page-content simple-page products-page">
@@ -79,7 +82,13 @@ export function FlavorsPage() {
         </div>
       </form>
       <div className="resource-list">
-        <div className="resource-list-header"><div><strong>Sabores por marca</strong><span>{flavors.filter((flavor) => flavor.active && activeBrandIds.has(flavor.brand_id)).length} sabores ativos</span></div></div>
+        <div className="resource-list-header">
+          <div><strong>{showAll ? 'Todos os sabores' : 'Sabores ativos'}</strong><span>{visibleFlavors.filter((flavor) => activeBrandIds.has(flavor.brand_id)).length} registros</span></div>
+          {inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
+            {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}
+          </button>}
+        </div>
         {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : flavorGroups.length === 0 ? <div className="resource-state">Nenhum sabor cadastrado ainda.</div> : flavorGroups.map(({ brand, flavors: brandFlavors }) => (
           <div className="product-category-group" key={brand.id}>
             <div className="product-category-heading"><h3>{brand.name}</h3><span>{brandFlavors.length} {brandFlavors.length === 1 ? 'sabor' : 'sabores'}</span></div>
