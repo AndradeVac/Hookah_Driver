@@ -1,24 +1,30 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import { AppShell } from '../components/layout/AppShell'
-import { BrandsPage } from '../features/brands/BrandsPage'
-import { CategoriesPage } from '../features/categories/CategoriesPage'
-import { ProductsPage } from '../features/products/ProductsPage'
-import { FlavorsPage } from '../features/flavors/FlavorsPage'
-import { CustomersPage } from '../features/customers/CustomersPage'
-import { UsersPage } from '../features/users/UsersPage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { ProtectedRoute, RoleRoute } from '../features/auth/ProtectedRoute'
-import { DashboardOverviewPage } from '../features/dashboard/DashboardOverviewPage'
-import { OrderDetailPage } from '../features/orders/OrderDetailPage'
-import { NewOrderPage } from '../features/orders/NewOrderPage'
-import { OrdersPage } from '../features/orders/OrdersPage'
-import { CustomerOrderPage } from '../features/customer/CustomerOrderPage'
-import { CustomerQrScannerPage } from '../features/customer/CustomerQrScannerPage'
-import { CustomerJourneyPage } from '../features/customer/CustomerJourneyPage'
+
+const BrandsPage = lazy(() => import('../features/brands/BrandsPage').then((module) => ({ default: module.BrandsPage })))
+const CategoriesPage = lazy(() => import('../features/categories/CategoriesPage').then((module) => ({ default: module.CategoriesPage })))
+const ProductsPage = lazy(() => import('../features/products/ProductsPage').then((module) => ({ default: module.ProductsPage })))
+const FlavorsPage = lazy(() => import('../features/flavors/FlavorsPage').then((module) => ({ default: module.FlavorsPage })))
+const CustomersPage = lazy(() => import('../features/customers/CustomersPage').then((module) => ({ default: module.CustomersPage })))
+const UsersPage = lazy(() => import('../features/users/UsersPage').then((module) => ({ default: module.UsersPage })))
+const DashboardOverviewPage = lazy(() => import('../features/dashboard/DashboardOverviewPage').then((module) => ({ default: module.DashboardOverviewPage })))
+const OrderDetailPage = lazy(() => import('../features/orders/OrderDetailPage').then((module) => ({ default: module.OrderDetailPage })))
+const NewOrderPage = lazy(() => import('../features/orders/NewOrderPage').then((module) => ({ default: module.NewOrderPage })))
+const OrdersPage = lazy(() => import('../features/orders/OrdersPage').then((module) => ({ default: module.OrdersPage })))
+const CustomerQrScannerPage = lazy(() => import('../features/customer/CustomerQrScannerPage').then((module) => ({ default: module.CustomerQrScannerPage })))
+const CustomerJourneyPage = lazy(() => import('../features/customer/CustomerJourneyPage').then((module) => ({ default: module.CustomerJourneyPage })))
+
+function RouteLoading() {
+  return <div className="auth-loading"><div className="loading-mark">H</div><span>Carregando seu espaço...</span></div>
+}
 
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<RouteLoading />}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cliente" element={<CustomerJourneyPage />} />
@@ -42,6 +48,7 @@ export function AppRouter() {
         </Route>
             <Route path="*" element={<Navigate to="/orders" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }
