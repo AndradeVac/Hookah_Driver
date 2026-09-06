@@ -412,6 +412,68 @@ button { cursor: pointer; }
   font-size: 14px;
 }
 
+.chart-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--accent);
+}
+
+.chart-heading h3 {
+  margin-bottom: 5px;
+}
+
+.chart-heading span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.breakdown-card {
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(17, 22, 26, 0.96), rgba(12, 16, 18, 0.96));
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.breakdown-row > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 7px;
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.breakdown-row strong {
+  color: #f5f6f3;
+}
+
+.breakdown-row i {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+}
+
+.breakdown-row b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+}
+
+.breakdown-row b.payment-bar {
+  background: linear-gradient(90deg, var(--tech-blue), #9aebff);
+}
+
 .bars {
   display: flex;
   align-items: end;
