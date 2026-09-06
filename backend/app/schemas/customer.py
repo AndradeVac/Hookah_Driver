@@ -12,6 +12,7 @@ class CustomerCreate(BaseModel):
 class CustomerUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1)
     phone: str | None = None
+    active: bool | None = None
 
 
 class CustomerResponse(BaseModel):
@@ -20,5 +21,6 @@ class CustomerResponse(BaseModel):
     id: UUID
     name: str
     phone: str | None
+    active: bool
     created_at: datetime
     updated_at: datetime

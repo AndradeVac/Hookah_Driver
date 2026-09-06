@@ -38,7 +38,15 @@ class CustomerService:
             customer.name = data.name
         if "phone" in data.model_fields_set:
             customer.phone = data.phone
+        if data.active is not None:
+            customer.active = data.active
 
         self.repository.update(customer)
+        self.db.commit()
+        return customer
+
+    def delete(self, customer_id: UUID) -> Customer:
+        customer = self.get_by_id(customer_id)
+        self.repository.delete(customer)
         self.db.commit()
         return customer

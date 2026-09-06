@@ -42,3 +42,11 @@ def update_customer(
     db: Session = Depends(get_db),
 ):
     return CustomerService(db).update(customer_id, data)
+
+
+@router.delete("/{customer_id}", response_model=CustomerResponse)
+def delete_customer(
+    customer_id: UUID,
+    db: Session = Depends(get_db),
+):
+    return CustomerService(db).delete(customer_id)
