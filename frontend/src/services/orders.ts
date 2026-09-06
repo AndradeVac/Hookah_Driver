@@ -19,10 +19,20 @@ export type Order = {
     total_price: string
     notes: string | null
   }>
+  status_history: Array<{
+    status: OrderStatus
+    changed_by_user_id: string | null
+    created_at: string
+  }>
 }
 
 export async function getOrders() {
   const { data } = await api.get<Order[]>('/orders')
+  return data
+}
+
+export async function getOrder(id: string) {
+  const { data } = await api.get<Order>(`/orders/${id}`)
   return data
 }
 
