@@ -40,3 +40,5 @@ class DashboardAnalyticsResponse(BaseModel):
     sales_by_hour: list[HourSalesSummary]
     orders_by_status: list[BreakdownSummary]
     orders_by_payment: list[BreakdownSummary]
+    previous_revenue: Decimal = Decimal("0")
+    revenue_change_percent: Decimal = Decimal("0")

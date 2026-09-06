@@ -10,12 +10,14 @@ export type DashboardAnalytics = {
   sales_by_hour: Array<{ hour: number; orders: number; revenue: string }>
   orders_by_status: Array<{ label: string; count: number }>
   orders_by_payment: Array<{ label: string; count: number }>
+  previous_revenue: string
+  revenue_change_percent: string
 }
 
 export type AnalyticsPeriod = 'month' | 'quarter' | 'all'
 
-export async function getDashboardAnalytics(period: AnalyticsPeriod) {
-  const { data } = await api.get<DashboardAnalytics>('/analytics/dashboard', { params: { period } })
+export async function getDashboardAnalytics(period: AnalyticsPeriod, start?: string, end?: string) {
+  const { data } = await api.get<DashboardAnalytics>('/analytics/dashboard', { params: { period, start: start || undefined, end: end || undefined } })
   return data
 }
 

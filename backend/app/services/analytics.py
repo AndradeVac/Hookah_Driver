@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from io import BytesIO
 
@@ -44,7 +44,9 @@ class AnalyticsService:
         end = start.replace(year=year, month=month)
         return start, end
 
-    def _filters(self, period: str):
+    def _filters(self, period: str, custom_start: datetime | None = None, custom_end: datetime | None = None):
+        if custom_start is not None and custom_end is not None:
+            return [Order.status != OrderStatus.CANCELLED, Order.created_at >= custom_start, Order.created_at < custom_end], custom_start, custom_end
         start, end = self.period_bounds(period)
         conditions = [Order.status != OrderStatus.CANCELLED]
         if start is not None:
@@ -53,11 +55,11 @@ class AnalyticsService:
             conditions.append(Order.created_at < end)
         return conditions, start, end
 
-    def dashboard(self, period: str = "month") -> DashboardAnalyticsResponse:
+    def dashboard(self, period: str = "month", custom_start: datetime | None = None, custom_end: datetime | None = None) -> DashboardAnalyticsResponse:
         if period not in {"month", "quarter", "all"}:
             raise ValueError("Período inválido. Use month, quarter ou all.")
 
-        conditions, start, end = self._filters(period)
+        conditions, start, end = self._filters(period, custom_start, custom_end)
         revenue, order_count, average_ticket = self.db.execute(
             select(
                 func.coalesce(func.sum(Order.total), 0),
@@ -121,6 +123,15 @@ class AnalyticsService:
             .order_by(Order.payment_method)
         ).all()
 
+        previous_revenue = Decimal("0")
+        revenue_change_percent = Decimal("0")
+        if start is not None and end is not None:
+            duration = end - start
+            previous_start = start - duration
+            previous_revenue = Decimal(self.db.scalar(select(func.coalesce(func.sum(Order.total), 0)).where(Order.status != OrderStatus.CANCELLED, Order.created_at >= previous_start, Order.created_at < start)) or 0)
+            if previous_revenue:
+                revenue_change_percent = ((Decimal(revenue) - previous_revenue) / previous_revenue * 100).quantize(Decimal("0.01"))
+
         products = [ProductSalesSummary(product_name=row.product_name, quantity=int(row.quantity), revenue=Decimal(row.revenue)) for row in product_rows]
         essences = [EssenceSalesSummary(brand_name=row.brand_name, flavor_name=row.flavor_name, quantity=int(row.quantity), revenue=Decimal(row.revenue)) for row in essence_rows]
         sales_by_hour = [HourSalesSummary(hour=int(row.hour), orders=int(row.orders), revenue=Decimal(row.revenue)) for row in hourly_rows]
@@ -138,6 +149,8 @@ class AnalyticsService:
             sales_by_hour=sales_by_hour,
             orders_by_status=[BreakdownSummary(label=row[0].value, count=int(row[1])) for row in status_rows],
             orders_by_payment=[BreakdownSummary(label=row[0].value, count=int(row[1])) for row in payment_rows],
+            previous_revenue=previous_revenue,
+            revenue_change_percent=revenue_change_percent,
         )
 
     def export_xlsx(self, period: str) -> bytes:

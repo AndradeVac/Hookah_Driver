@@ -1,9 +1,9 @@
-import { AlertCircle, Check, ChevronDown, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, CircleOff, Edit3, Eye, EyeOff, LoaderCircle, Plus, Save, X } from 'lucide-react'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { getCategories, type Category } from '../../services/categories'
 import { getBrands, type Brand } from '../../services/brands'
 import { getFlavors, type Flavor } from '../../services/flavors'
-import { createProduct, getProducts, updateProductStatus, type Product } from '../../services/products'
+import { createProduct, getProducts, updateProduct, updateProductStatus, type Product } from '../../services/products'
 
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -21,6 +21,10 @@ export function ProductsPage() {
   const [showAll, setShowAll] = useState(false)
   const [listOpen, setListOpen] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editPrice, setEditPrice] = useState('')
+  const [editDescription, setEditDescription] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -77,6 +81,27 @@ export function ProductsPage() {
     }
   }
 
+  function startEditing(product: Product) {
+    setEditingId(product.id)
+    setEditName(product.name)
+    setEditPrice(product.price)
+    setEditDescription(product.description ?? '')
+  }
+
+  async function saveProduct(product: Product) {
+    setUpdatingId(product.id)
+    setError('')
+    try {
+      const updated = await updateProduct(product.id, { name: editName.trim(), price: editPrice.replace(',', '.'), description: editDescription.trim() || null })
+      setProducts((current) => current.map((item) => item.id === product.id ? updated : item))
+      setEditingId(null)
+    } catch {
+      setError('Não foi possível salvar o produto.')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
   const inactiveCount = products.filter((product) => !product.active).length
   const visibleProducts = showAll ? products : products.filter((product) => product.active)
   const productsByCategory = useMemo(() => categories.map((category) => ({
@@ -118,7 +143,7 @@ export function ProductsPage() {
         {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : productsByCategory.length === 0 ? <div className="resource-state">Nenhum produto cadastrado ainda.</div> : productsByCategory.map(({ category, products: categoryProducts }) => (
           <div className="product-category-group" key={category.id}>
             <div className="product-category-heading"><h3>{displayCategoryName(category)}</h3><span>{categoryProducts.length} {categoryProducts.length === 1 ? 'item' : 'itens'}</span></div>
-            {categoryProducts.map((product) => <article className="resource-row" key={product.id}><div><strong>{product.name}</strong><span className={product.active ? '' : 'status-inactive'}>{product.description || (product.active ? 'Sem descrição' : 'Inativo')}</span></div><b className="product-price">R$ {Number(product.price).toFixed(2).replace('.', ',')}</b><button className={product.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(product)} disabled={updatingId === product.id} aria-label={`${product.active ? 'Desativar' : 'Ativar'} ${product.name}`}>{updatingId === product.id ? <LoaderCircle className="spin" size={16} /> : product.active ? <CircleOff size={16} /> : <Check size={16} />}</button></article>)}
+            {categoryProducts.map((product) => editingId === product.id ? <article className="resource-row product-edit-row" key={product.id}><input value={editName} onChange={(event) => setEditName(event.target.value)} aria-label="Nome do produto" /><input value={editDescription} onChange={(event) => setEditDescription(event.target.value)} aria-label="Descrição do produto" /><input value={editPrice} onChange={(event) => setEditPrice(event.target.value)} aria-label="Preço do produto" inputMode="decimal" /><button className="icon-success" type="button" onClick={() => void saveProduct(product)} disabled={updatingId === product.id} aria-label="Salvar produto">{updatingId === product.id ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />}</button><button className="icon-danger" type="button" onClick={() => setEditingId(null)} aria-label="Cancelar edição"><X size={16} /></button></article> : <article className="resource-row" key={product.id}><div><strong>{product.name}</strong><span className={product.active ? '' : 'status-inactive'}>{product.description || (product.active ? 'Sem descrição' : 'Inativo')}</span></div><b className="product-price">R$ {Number(product.price).toFixed(2).replace('.', ',')}</b><button className="icon-edit" type="button" onClick={() => startEditing(product)} aria-label={`Editar ${product.name}`}><Edit3 size={15} /></button><button className={product.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(product)} disabled={updatingId === product.id} aria-label={`${product.active ? 'Desativar' : 'Ativar'} ${product.name}`}>{updatingId === product.id ? <LoaderCircle className="spin" size={16} /> : product.active ? <CircleOff size={16} /> : <Check size={16} />}</button></article>)}
           </div>
         )))}
       </div>

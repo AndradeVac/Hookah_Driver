@@ -369,6 +369,7 @@ button { cursor: pointer; }
 }
 
 .dashboard-tools select,
+.dashboard-tools input,
 .dashboard-tools button {
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;
@@ -1273,6 +1274,26 @@ button { cursor: pointer; }
   color: #f5f5f2;
   font-size: 13px;
   white-space: nowrap;
+}
+
+.icon-edit {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(100, 200, 255, 0.22);
+  border-radius: 8px;
+  padding: 7px;
+  background: transparent;
+  color: var(--tech-blue);
+}
+
+.product-edit-row input {
+  min-width: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 7px;
+  padding: 8px;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font-size: 11px;
 }
 
 @media (max-width: 900px) {

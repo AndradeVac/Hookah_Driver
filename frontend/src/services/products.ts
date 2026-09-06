@@ -32,3 +32,8 @@ export async function updateProductStatus(id: string, active: boolean) {
   const { data } = await api.patch<Product>(`/products/${id}`, { active })
   return data
 }
+
+export async function updateProduct(id: string, payload: Partial<Pick<Product, 'name' | 'description' | 'price' | 'category_id' | 'flavor_id'>>) {
+  const { data } = await api.patch<Product>(`/products/${id}`, payload)
+  return data
+}

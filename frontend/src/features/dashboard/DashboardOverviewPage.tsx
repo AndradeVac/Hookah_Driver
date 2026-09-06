@@ -12,14 +12,16 @@ const paymentLabels: Record<string, string> = { PIX: 'PIX', CARD: 'Cartão', CAS
 export function DashboardOverviewPage() {
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null)
   const [period, setPeriod] = useState<AnalyticsPeriod>('month')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     setIsLoading(true)
-    getDashboardAnalytics(period).then(setAnalytics).catch(() => setError('Não foi possível carregar os indicadores.')).finally(() => setIsLoading(false))
-  }, [period])
+    getDashboardAnalytics(period, customStart ? `${customStart}T00:00:00Z` : undefined, customEnd ? `${customEnd}T23:59:59Z` : undefined).then(setAnalytics).catch(() => setError('Não foi possível carregar os indicadores.')).finally(() => setIsLoading(false))
+  }, [period, customStart, customEnd])
 
   async function exportDashboard(format: 'xlsx' | 'pdf') {
     setIsExporting(true)
@@ -34,7 +36,7 @@ export function DashboardOverviewPage() {
   }
 
   const metrics = [
-    { label: 'Faturamento', value: analytics ? formatMoney(analytics.revenue) : '', delta: analytics ? `${analytics.order_count} pedidos no período` : '', icon: ShoppingCart },
+    { label: 'Faturamento', value: analytics ? formatMoney(analytics.revenue) : '', delta: analytics ? `${Number(analytics.revenue_change_percent) >= 0 ? '+' : ''}${Number(analytics.revenue_change_percent).toFixed(1)}% vs anterior` : '', icon: ShoppingCart },
     { label: 'Pedidos', value: analytics ? String(analytics.order_count) : '', delta: 'Pedidos registrados', icon: BarChart3 },
     { label: 'Ticket médio', value: analytics ? formatMoney(analytics.average_ticket) : '', delta: 'Média por pedido', icon: ChartColumnBig },
     { label: 'Mais vendido', value: analytics?.top_product?.product_name ?? 'Sem dados', delta: analytics?.top_product ? `${analytics.top_product.quantity} unidades` : 'Aguardando pedidos', icon: Users },
@@ -46,7 +48,7 @@ export function DashboardOverviewPage() {
 
   return (
     <section className="page-content dashboard-tech-shell">
-      <div className="page-header dashboard-header"><div><span className="eyebrow black">HOOKAH DRIVE</span><h1>Visão do Lounge</h1><p>Resumo de desempenho</p></div><div className="dashboard-tools"><select value={period} onChange={(event) => setPeriod(event.target.value as AnalyticsPeriod)} aria-label="Período do dashboard"><option value="month">Este mês</option><option value="quarter">Este trimestre</option><option value="all">Todo período</option></select><button type="button" onClick={() => void exportDashboard('xlsx')} disabled={isExporting}>Excel</button><button type="button" onClick={() => void exportDashboard('pdf')} disabled={isExporting}>PDF</button></div></div>
+      <div className="page-header dashboard-header"><div><span className="eyebrow black">HOOKAH DRIVE</span><h1>Visão do Lounge</h1><p>Resumo de desempenho</p></div><div className="dashboard-tools"><select value={period} onChange={(event) => setPeriod(event.target.value as AnalyticsPeriod)} aria-label="Período do dashboard"><option value="month">Este mês</option><option value="quarter">Este trimestre</option><option value="all">Todo período</option></select><input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} aria-label="Data inicial" /><input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} aria-label="Data final" /><button type="button" onClick={() => void exportDashboard('xlsx')} disabled={isExporting}>Excel</button><button type="button" onClick={() => void exportDashboard('pdf')} disabled={isExporting}>PDF</button></div></div>
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
       <div className="metrics-grid">{metrics.map(({ label, value, delta, icon: Icon }) => <article key={label} className="metric-tech-card"><div className="metric-card-top"><span>{label}</span><div className="metric-icon"><Icon size={17} /></div></div><strong>{isLoading ? <LoaderCircle className="spin" size={22} /> : value}</strong><small>{delta}</small></article>)}</div>
       <div className="analytics-grid">

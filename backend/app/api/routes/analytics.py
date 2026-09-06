@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -18,10 +20,12 @@ router = APIRouter(
 @router.get("/dashboard", response_model=DashboardAnalyticsResponse)
 def get_dashboard_analytics(
     period: str = Query(default="month", pattern="^(month|quarter|all)$"),
+    start: datetime | None = Query(default=None),
+    end: datetime | None = Query(default=None),
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
-    return AnalyticsService(db).dashboard(period)
+    return AnalyticsService(db).dashboard(period, start, end)
 
 
 @router.get("/dashboard/export")
