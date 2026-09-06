@@ -71,8 +71,12 @@ class OrderService:
             OrderStatusHistory(status=OrderStatus.RECEIVED)
         )
 
-        self.repository.create(order)
-        self.db.commit()
+        try:
+            self.repository.create(order)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         return order
 
     def get_by_id(self, order_id: UUID) -> Order:
@@ -101,6 +105,10 @@ class OrderService:
         order.status_history.append(
             OrderStatusHistory(status=data.status)
         )
-        self.repository.update(order)
-        self.db.commit()
+        try:
+            self.repository.update(order)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         return order

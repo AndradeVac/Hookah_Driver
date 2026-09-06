@@ -9,8 +9,17 @@ from app.services.order import OrderService
 
 
 class FakeDatabase:
+    last = None
+
+    def __init__(self):
+        self.rollback_calls = 0
+        FakeDatabase.last = self
+
     def commit(self):
         pass
+
+    def rollback(self):
+        self.rollback_calls += 1
 
 
 class FakeCustomerRepository:
@@ -36,6 +45,8 @@ class FakeOrderRepository:
         self.order = order
 
     def create(self, order):
+        if getattr(self, "fail_create", False):
+            raise RuntimeError("falha de persistencia")
         self.order = order
         return order
 
@@ -172,3 +183,25 @@ def test_update_order_status_rejects_finished_transition(monkeypatch):
             order.id,
             OrderStatusUpdate(status=OrderStatus.CANCELLED),
         )
+
+
+def test_create_order_rolls_back_when_persistence_fails(monkeypatch):
+    customer = type("Customer", (), {"id": uuid4()})()
+    product = type(
+        "Product",
+        (),
+        {"id": uuid4(), "name": "Produto", "price": Decimal("10.00")},
+    )()
+    service, repository = build_service(monkeypatch, customer, {product.id: product})
+    repository.fail_create = True
+
+    with pytest.raises(RuntimeError, match="falha de persistencia"):
+        service.create(
+            OrderCreate(
+                customer_id=customer.id,
+                payment_method="PIX",
+                items=[OrderItemCreate(product_id=product.id, quantity=1)],
+            )
+        )
+
+    assert FakeDatabase.last.rollback_calls == 1

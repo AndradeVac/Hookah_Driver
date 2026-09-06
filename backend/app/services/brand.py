@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import BrandNotFoundError
+from app.core.exceptions import NotFoundError
 from app.models.brand import Brand
 from app.repositories.brand import BrandRepository
 from app.schemas.brand import BrandCreate, BrandUpdate
@@ -28,7 +28,7 @@ class BrandService:
         brand = self.repository.get_by_id(brand_id)
 
         if brand is None:
-            raise BrandNotFoundError(
+            raise NotFoundError(
                 "Marca não encontrada."
             )
 
@@ -46,7 +46,7 @@ class BrandService:
         brand = self.repository.get_by_id(brand_id)
 
         if brand is None:
-            raise BrandNotFoundError(
+            raise NotFoundError(
                 "Marca não encontrada."
             )
 
@@ -65,7 +65,7 @@ class BrandService:
         brand = self.repository.get_by_id(brand_id)
 
         if brand is None:
-            raise BrandNotFoundError(
+            raise NotFoundError(
                 "Marca não encontrada."
             )
 
