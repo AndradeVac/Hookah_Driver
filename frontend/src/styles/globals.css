@@ -149,6 +149,33 @@ button { cursor: pointer; }
 }
 
 .nav-label {
+
+  .nav-section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+  }
+
+  .nav-section-toggle .nav-label {
+    flex: 1;
+  }
+
+  .nav-section-toggle > svg {
+    margin-right: 8px;
+    color: #71817c;
+    transform: rotate(-90deg);
+    transition: transform 0.2s ease;
+  }
+
+  .nav-section-toggle > svg.section-chevron-open {
+    transform: rotate(0deg);
+  }
   margin: 14px 9px 6px;
   color: #7a8a86;
   font-size: 9px;

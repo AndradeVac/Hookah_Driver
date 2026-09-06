@@ -29,7 +29,12 @@ const navigation = [
 
 export function AppShell() {
   const [open, setOpen] = useState(false)
+  const [sections, setSections] = useState({ catalog: true, relationship: true, administration: true })
   const { user, logout } = useAuth()
+
+  function toggleSection(section: keyof typeof sections) {
+    setSections((current) => ({ ...current, [section]: !current[section] }))
+  }
 
   return (
     <div className="app-shell app-shell-dark">
@@ -58,14 +63,10 @@ export function AppShell() {
               <Icon size={18} strokeWidth={1.8} /> {label}
             </NavLink>
           ))}
-          {user?.role === 'ADMIN' && <><span className="nav-label">Catálogo</span>{navigation.slice(2, 6).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
-          <span className="nav-label">Relacionamento</span>
-          {navigation.slice(6, 7).map(({ label, to, icon: Icon }) => (
-            <NavLink key={to} to={to} onClick={() => setOpen(false)}>
-              <Icon size={18} strokeWidth={1.8} /> {label}
-            </NavLink>
-          ))}
-          {user?.role === 'ADMIN' && <><span className="nav-label">Administração</span>{navigation.slice(7).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
+          {user?.role === 'ADMIN' && <><button className="nav-section-toggle" type="button" onClick={() => toggleSection('catalog')}><span className="nav-label">Catálogo</span><ChevronDown size={14} className={sections.catalog ? 'section-chevron-open' : ''} /></button>{sections.catalog && navigation.slice(2, 6).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
+          <button className="nav-section-toggle" type="button" onClick={() => toggleSection('relationship')}><span className="nav-label">Relacionamento</span><ChevronDown size={14} className={sections.relationship ? 'section-chevron-open' : ''} /></button>
+          {sections.relationship && navigation.slice(6, 7).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}
+          {user?.role === 'ADMIN' && <><button className="nav-section-toggle" type="button" onClick={() => toggleSection('administration')}><span className="nav-label">Administração</span><ChevronDown size={14} className={sections.administration ? 'section-chevron-open' : ''} /></button>{sections.administration && navigation.slice(7).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
         </nav>
 
         <div className="sidebar-footer">
