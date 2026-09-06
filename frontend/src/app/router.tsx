@@ -7,12 +7,11 @@ import { FlavorsPage } from '../features/flavors/FlavorsPage'
 import { CustomersPage } from '../features/customers/CustomersPage'
 import { UsersPage } from '../features/users/UsersPage'
 import { LoginPage } from '../features/auth/LoginPage'
-import { ProtectedRoute } from '../features/auth/ProtectedRoute'
+import { ProtectedRoute, RoleRoute } from '../features/auth/ProtectedRoute'
 import { DashboardOverviewPage } from '../features/dashboard/DashboardOverviewPage'
 import { OrderDetailPage } from '../features/orders/OrderDetailPage'
 import { NewOrderPage } from '../features/orders/NewOrderPage'
 import { OrdersPage } from '../features/orders/OrdersPage'
-import { PlaceholderPage } from '../features/shared/PlaceholderPage'
 
 export function AppRouter() {
   return (
@@ -21,17 +20,19 @@ export function AppRouter() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
-            <Route path="/" element={<DashboardOverviewPage />} />
-            <Route path="/dashboard" element={<DashboardOverviewPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/orders/new" element={<NewOrderPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
-            <Route path="/brands" element={<BrandsPage />} />
-            <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/flavors" element={<FlavorsPage />} />
-            <Route path="/products" element={<ProductsPage />} />
             <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/users" element={<UsersPage />} />
+            <Route element={<RoleRoute roles={['ADMIN']} />}>
+              <Route path="/" element={<DashboardOverviewPage />} />
+              <Route path="/dashboard" element={<DashboardOverviewPage />} />
+              <Route path="/brands" element={<BrandsPage />} />
+              <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/flavors" element={<FlavorsPage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/users" element={<UsersPage />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

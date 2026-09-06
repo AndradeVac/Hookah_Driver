@@ -58,24 +58,14 @@ export function AppShell() {
               <Icon size={18} strokeWidth={1.8} /> {label}
             </NavLink>
           ))}
-          <span className="nav-label">Catálogo</span>
-          {navigation.slice(2, 6).map(({ label, to, icon: Icon }) => (
-            <NavLink key={to} to={to} onClick={() => setOpen(false)}>
-              <Icon size={18} strokeWidth={1.8} /> {label}
-            </NavLink>
-          ))}
+          {user?.role === 'ADMIN' && <><span className="nav-label">Catálogo</span>{navigation.slice(2, 6).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
           <span className="nav-label">Relacionamento</span>
           {navigation.slice(6, 7).map(({ label, to, icon: Icon }) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}>
               <Icon size={18} strokeWidth={1.8} /> {label}
             </NavLink>
           ))}
-          <span className="nav-label">Administração</span>
-          {navigation.slice(7).map(({ label, to, icon: Icon }) => (
-            <NavLink key={to} to={to} onClick={() => setOpen(false)}>
-              <Icon size={18} strokeWidth={1.8} /> {label}
-            </NavLink>
-          ))}
+          {user?.role === 'ADMIN' && <><span className="nav-label">Administração</span>{navigation.slice(7).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
         </nav>
 
         <div className="sidebar-footer">
