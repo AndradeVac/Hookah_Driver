@@ -15,6 +15,13 @@ class CategoryService:
         self.db = db
 
     def create(self, data: CategoryCreate) -> Category:
+        existing_category = self.repository.get_by_name(data.name)
+        if existing_category is not None and not existing_category.active:
+            existing_category.active = True
+            self.repository.update(existing_category)
+            self.db.commit()
+            return existing_category
+
         category = Category(
             name=data.name,
         )
@@ -41,7 +48,7 @@ class CategoryService:
         data: CategoryUpdate,
     ) -> Category:
 
-        category = self.repository.get_by_id(category_id)
+        category = self.repository.get_by_id_any_status(category_id)
 
         if category is None:
             raise NotFoundError("Categoria não encontrada.")

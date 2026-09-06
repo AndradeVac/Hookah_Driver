@@ -26,12 +26,18 @@ class CategoryRepository:
 
         return self.db.scalar(statement)
 
+    def get_by_id_any_status(self, category_id: UUID) -> Category | None:
+        statement = select(Category).where(Category.id == category_id)
+
+        return self.db.scalar(statement)
+
+    def get_by_name(self, name: str) -> Category | None:
+        statement = select(Category).where(Category.name == name)
+
+        return self.db.scalar(statement)
+
     def get_all(self) -> list[Category]:
-        statement = (
-            select(Category)
-            .where(Category.active.is_(True))
-            .order_by(Category.name)
-        )
+        statement = select(Category).order_by(Category.name)
 
         return list(self.db.scalars(statement).all())
 

@@ -25,6 +25,14 @@ class FakeCategoryRepository:
             return self.category
         return None
 
+    def get_by_id_any_status(self, category_id):
+        return self.get_by_id(category_id)
+
+    def get_by_name(self, name):
+        if self.category is not None and self.category.name == name:
+            return self.category
+        return None
+
     def update(self, category):
         return category
 
@@ -51,6 +59,17 @@ def test_create_category(monkeypatch):
     category = service.create(CategoryCreate(name="Categoria"))
 
     assert category.name == "Categoria"
+
+
+def test_create_category_reactivates_soft_deleted_category(monkeypatch):
+    category = Category(id=uuid4(), name="Bebidas", active=False)
+    service, repository = build_service(monkeypatch, category)
+
+    restored = service.create(CategoryCreate(name="Bebidas"))
+
+    assert restored.id == category.id
+    assert restored.active is True
+    assert repository.category is category
 
 
 def test_get_category_rejects_missing_id(monkeypatch):
