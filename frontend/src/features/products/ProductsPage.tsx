@@ -78,7 +78,7 @@ export function ProductsPage() {
         <div className="resource-list-header"><div><strong>Produtos por categoria</strong><span>{products.length} produtos ativos</span></div></div>
         {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : productsByCategory.length === 0 ? <div className="resource-state">Nenhum produto cadastrado ainda.</div> : productsByCategory.map(({ category, products: categoryProducts }) => (
           <div className="product-category-group" key={category.id}>
-            <h3>{category.name}<span>{categoryProducts.length} {categoryProducts.length === 1 ? 'item' : 'itens'}</span></h3>
+            <div className="product-category-heading"><h3>{category.name}</h3><span>{categoryProducts.length} {categoryProducts.length === 1 ? 'item' : 'itens'}</span></div>
             {categoryProducts.map((product) => <article className="resource-row" key={product.id}><div><strong>{product.name}</strong><span>{product.description || 'Sem descrição'}</span></div><b className="product-price">R$ {Number(product.price).toFixed(2).replace('.', ',')}</b></article>)}
           </div>
         ))}
