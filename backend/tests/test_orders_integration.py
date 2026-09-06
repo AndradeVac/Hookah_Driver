@@ -91,8 +91,8 @@ async def test_orders_api_end_to_end():
         ) as client:
             login = await client.post(
                 "/auth/login",
-                json={
-                    "email": operator_email,
+                data={
+                    "username": operator_email,
                     "password": "senha-integration",
                 },
             )
