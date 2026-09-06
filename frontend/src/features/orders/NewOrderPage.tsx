@@ -55,7 +55,7 @@ export function NewOrderPage() {
 
   function addProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const selectedProductId = isRoshCategory ? selectedFlavorProduct?.id : productId
+    const selectedProductId = isRoshCategory ? selectedBrandProduct?.id : productId
     const product = products.find((item) => item.id === selectedProductId)
     const amount = Math.max(1, Number(quantity) || 1)
     if (!product) return
@@ -84,7 +84,7 @@ export function NewOrderPage() {
   const selectedCategory = categories.find((category) => category.id === categoryId)
   const isRoshCategory = selectedCategory?.name.toLowerCase() === 'essências' || selectedCategory?.name.toLowerCase() === 'rosh'
   const brandFlavors = flavors.filter((flavor) => flavor.brand_id === brandId)
-  const selectedFlavorProduct = products.find((product) => product.category_id === categoryId && product.flavor_id === flavorId)
+  const selectedBrandProduct = products.find((product) => product.category_id === categoryId && brandFlavors.some((flavor) => flavor.id === product.flavor_id))
   const displayCategoryName = (category: Category) => category.name.toLowerCase() === 'essências' ? 'Rosh' : category.name
 
   if (isLoading) return <div className="auth-loading"><LoaderCircle className="spin" size={20} />Carregando dados...</div>
@@ -100,8 +100,8 @@ export function NewOrderPage() {
         <label htmlFor="order-category">Adicionar item</label>
         <select id="order-category" className="new-order-select" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setProductId('') }}>{categories.map((category) => <option key={category.id} value={category.id}>{displayCategoryName(category)}</option>)}</select>
         {isRoshCategory ? <div className="new-order-essence-fields"><select className="new-order-select" value={brandId} onChange={(event) => { setBrandId(event.target.value); setFlavorId(brandFlavors.find((flavor) => flavor.brand_id === event.target.value)?.id ?? '') }}><option value="">Selecione a marca</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select><select className="new-order-select" value={flavorId} onChange={(event) => setFlavorId(event.target.value)} disabled={!brandId}><option value="">Selecione o sabor</option>{brandFlavors.map((flavor) => <option key={flavor.id} value={flavor.id}>{flavor.name}</option>)}</select></div> : <select id="order-product" className="new-order-select" value={productId} onChange={(event) => setProductId(event.target.value)}><option value="">Selecione um produto</option>{products.filter((product) => product.category_id === categoryId).map((product) => <option key={product.id} value={product.id}>{product.name} · {money(product.price)}</option>)}</select>}
-        {isRoshCategory && <small className="new-order-hint">{selectedFlavorProduct ? `${selectedFlavorProduct.name} · ${money(selectedFlavorProduct.price)}` : 'Este sabor ainda não possui um Rosh cadastrado.'}</small>}
-        <form className="new-order-item-form" onSubmit={addProduct}><input type="number" min="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantidade" /><button className="icon-success" type="submit" aria-label="Adicionar item" disabled={isRoshCategory ? !selectedFlavorProduct : !productId}><Plus size={17} /></button></form>
+        {isRoshCategory && <small className="new-order-hint">{selectedBrandProduct ? `Rosh · ${money(selectedBrandProduct.price)} por unidade` : 'Esta marca ainda não possui um Rosh cadastrado.'}</small>}
+        <form className="new-order-item-form" onSubmit={addProduct}><input type="number" min="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantidade" /><button className="icon-success" type="submit" aria-label="Adicionar item" disabled={isRoshCategory ? !selectedBrandProduct || !flavorId : !productId}><Plus size={17} /></button></form>
         <label htmlFor="order-payment">Pagamento</label>
         <select id="order-payment" className="new-order-select" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as typeof paymentMethod)}><option value="PIX">PIX</option><option value="CARD">Cartão</option><option value="CASH">Dinheiro</option></select>
       </article>
