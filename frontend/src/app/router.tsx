@@ -3,6 +3,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { BrandsPage } from '../features/brands/BrandsPage'
 import { CategoriesPage } from '../features/categories/CategoriesPage'
 import { ProductsPage } from '../features/products/ProductsPage'
+import { FlavorsPage } from '../features/flavors/FlavorsPage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute'
 import { DashboardOverviewPage } from '../features/dashboard/DashboardOverviewPage'
@@ -23,7 +24,7 @@ export function AppRouter() {
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/brands" element={<BrandsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/flavors" element={<PlaceholderPage title="Sabores" description="Gerencie sabores e suas marcas relacionadas." />} />
+            <Route path="/flavors" element={<FlavorsPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/customers" element={<PlaceholderPage title="Clientes" description="Acompanhe a base de clientes e seus pedidos." />} />
           </Route>

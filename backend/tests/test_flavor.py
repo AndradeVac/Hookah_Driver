@@ -35,6 +35,14 @@ class FakeFlavorRepository:
             return self.flavor
         return None
 
+    def get_by_id_any_status(self, flavor_id):
+        return self.get_by_id(flavor_id)
+
+    def get_by_brand_and_name(self, brand_id, name):
+        if self.flavor is not None and self.flavor.brand_id == brand_id and self.flavor.name == name:
+            return self.flavor
+        return None
+
     def update(self, flavor):
         return flavor
 

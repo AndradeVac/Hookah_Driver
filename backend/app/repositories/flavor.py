@@ -26,12 +26,21 @@ class FlavorRepository:
 
         return self.db.scalar(statement)
 
-    def get_all(self) -> list[Flavor]:
-        statement = (
-            select(Flavor)
-            .where(Flavor.active.is_(True))
-            .order_by(Flavor.name)
+    def get_by_id_any_status(self, flavor_id: UUID) -> Flavor | None:
+        statement = select(Flavor).where(Flavor.id == flavor_id)
+
+        return self.db.scalar(statement)
+
+    def get_by_brand_and_name(self, brand_id: UUID, name: str) -> Flavor | None:
+        statement = select(Flavor).where(
+            Flavor.brand_id == brand_id,
+            Flavor.name == name,
         )
+
+        return self.db.scalar(statement)
+
+    def get_all(self) -> list[Flavor]:
+        statement = select(Flavor).order_by(Flavor.name)
 
         return list(self.db.scalars(statement).all())
 

@@ -25,6 +25,14 @@ class FlavorService:
     def create(self, data: FlavorCreate) -> Flavor:
         self._validate_brand(data.brand_id)
 
+        existing_flavor = self.repository.get_by_brand_and_name(data.brand_id, data.name)
+        if existing_flavor is not None and not existing_flavor.active:
+            existing_flavor.active = True
+            existing_flavor.description = data.description
+            self.repository.update(existing_flavor)
+            self.db.commit()
+            return existing_flavor
+
         flavor = Flavor(
             brand_id=data.brand_id,
             name=data.name,
@@ -53,7 +61,7 @@ class FlavorService:
         data: FlavorUpdate,
     ) -> Flavor:
 
-        flavor = self.repository.get_by_id(flavor_id)
+        flavor = self.repository.get_by_id_any_status(flavor_id)
 
         if flavor is None:
             raise NotFoundError("Sabor não encontrado.")
