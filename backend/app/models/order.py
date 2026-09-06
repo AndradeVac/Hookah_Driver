@@ -59,6 +59,14 @@ class Order(Base):
         server_default=text("nextval('orders_order_number_seq'::regclass)"),
     )
 
+    public_token: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+        nullable=False,
+        unique=True,
+    )
+
     customer_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("customers.id", name="fk_orders_customer", ondelete="RESTRICT"),

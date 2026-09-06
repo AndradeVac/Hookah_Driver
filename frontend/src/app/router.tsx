@@ -13,6 +13,7 @@ import { OrderDetailPage } from '../features/orders/OrderDetailPage'
 import { NewOrderPage } from '../features/orders/NewOrderPage'
 import { OrdersPage } from '../features/orders/OrdersPage'
 import { CustomerOrderPage } from '../features/customer/CustomerOrderPage'
+import { CustomerQrScannerPage } from '../features/customer/CustomerQrScannerPage'
 
 export function AppRouter() {
   return (
@@ -20,6 +21,7 @@ export function AppRouter() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/cliente" element={<CustomerOrderPage />} />
+          <Route path="/cliente/scan" element={<CustomerQrScannerPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/orders" element={<OrdersPage />} />

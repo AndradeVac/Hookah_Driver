@@ -5,7 +5,7 @@ import { getBrands, type Brand } from '../../services/brands'
 import { getCategories, type Category } from '../../services/categories'
 import { getFlavors, type Flavor } from '../../services/flavors'
 import { getProducts, type Product } from '../../services/products'
-import { createPublicOrder, type PublicOrderResponse } from '../../services/publicOrders'
+import { createPublicOrder, getPublicOrder, type PublicOrderResponse } from '../../services/publicOrders'
 
 type CartItem = { product: Product; quantity: number; variation?: string }
 
@@ -31,6 +31,14 @@ export function CustomerOrderPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (step !== 'success' || !order?.public_token) return
+    const refresh = window.setInterval(() => {
+      void getPublicOrder(order.public_token).then((tracking) => setOrder((current) => current ? { ...current, status: tracking.status, total: tracking.total } : current))
+    }, 15000)
+    return () => window.clearInterval(refresh)
+  }, [order?.public_token, step])
 
   useEffect(() => {
     Promise.all([getProducts(), getCategories(), getBrands(), getFlavors()]).then(([loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {

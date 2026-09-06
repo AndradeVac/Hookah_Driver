@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.customer import Customer
+from app.models.order import Order
 from app.repositories.customer import CustomerRepository
 from app.schemas.order import OrderCreate, OrderItemCreate
-from app.schemas.public_order import PublicOrderCreate, PublicOrderResponse
+from app.schemas.public_order import PublicOrderCreate, PublicOrderResponse, PublicOrderTracking
 from app.services.order import OrderService
 
 
@@ -27,4 +30,12 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
         payment_method=data.payment_method,
         items=[OrderItemCreate(product_id=item.product_id, quantity=item.quantity) for item in data.items],
     ))
-    return PublicOrderResponse(order_id=order.id, order_number=order.order_number, status=order.status.value, total=str(order.total))
+    return PublicOrderResponse(order_id=order.id, order_number=order.order_number, status=order.status.value, total=str(order.total), public_token=order.public_token)
+
+
+@router.get("/orders/{public_token}", response_model=PublicOrderTracking)
+def track_public_order(public_token: UUID, db: Session = Depends(get_db)):
+    order = db.query(Order).filter_by(public_token=public_token).first()
+    if order is None:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado.")
+    return PublicOrderTracking(order_number=order.order_number, status=order.status.value, total=str(order.total), created_at=order.created_at.isoformat())

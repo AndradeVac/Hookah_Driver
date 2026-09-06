@@ -23,3 +23,11 @@ class PublicOrderResponse(BaseModel):
     order_number: int
     status: str
     total: str
+    public_token: UUID
+
+
+class PublicOrderTracking(BaseModel):
+    order_number: int
+    status: str
+    total: str
+    created_at: str
