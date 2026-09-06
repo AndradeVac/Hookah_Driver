@@ -15,6 +15,13 @@ class BrandService:
         self.db = db
 
     def create(self, data: BrandCreate) -> Brand:
+        existing_brand = self.repository.get_by_name(data.name)
+        if existing_brand is not None and not existing_brand.active:
+            existing_brand.active = True
+            self.repository.update(existing_brand)
+            self.db.commit()
+            return existing_brand
+
         brand = Brand(
             name=data.name,
         )

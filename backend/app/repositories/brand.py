@@ -26,6 +26,11 @@ class BrandRepository:
 
         return self.db.scalar(statement)
 
+    def get_by_name(self, name: str) -> Brand | None:
+        statement = select(Brand).where(Brand.name == name)
+
+        return self.db.scalar(statement)
+
     def get_all(self) -> list[Brand]:
         statement = (
             select(Brand)

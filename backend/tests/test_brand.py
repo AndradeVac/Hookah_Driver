@@ -25,6 +25,11 @@ class FakeBrandRepository:
             return self.brand
         return None
 
+    def get_by_name(self, name):
+        if self.brand is not None and self.brand.name == name:
+            return self.brand
+        return None
+
     def update(self, brand):
         return brand
 
@@ -52,6 +57,17 @@ def test_create_brand(monkeypatch):
 
     assert brand.name == "Marca"
     assert brand.active is None or brand.active is True
+
+
+def test_create_brand_reactivates_soft_deleted_brand(monkeypatch):
+    brand = Brand(id=uuid4(), name="Nay", active=False)
+    service, repository = build_service(monkeypatch, brand)
+
+    restored = service.create(BrandCreate(name="Nay"))
+
+    assert restored.id == brand.id
+    assert restored.active is True
+    assert repository.brand is brand
 
 
 def test_get_brand_rejects_missing_id(monkeypatch):
