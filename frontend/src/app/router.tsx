@@ -12,12 +12,14 @@ import { DashboardOverviewPage } from '../features/dashboard/DashboardOverviewPa
 import { OrderDetailPage } from '../features/orders/OrderDetailPage'
 import { NewOrderPage } from '../features/orders/NewOrderPage'
 import { OrdersPage } from '../features/orders/OrdersPage'
+import { CustomerOrderPage } from '../features/customer/CustomerOrderPage'
 
 export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/cliente" element={<CustomerOrderPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/orders" element={<OrdersPage />} />

@@ -1,0 +1,30 @@
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.models.customer import Customer
+from app.repositories.customer import CustomerRepository
+from app.schemas.order import OrderCreate, OrderItemCreate
+from app.schemas.public_order import PublicOrderCreate, PublicOrderResponse
+from app.services.order import OrderService
+
+
+router = APIRouter(prefix="/public", tags=["Public customer"])
+
+
+@router.post("/orders", response_model=PublicOrderResponse, status_code=201)
+def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
+    customers = CustomerRepository(db)
+    customer = customers.get_by_phone(data.customer_phone)
+    if customer is None:
+        customer = customers.create(Customer(name=data.customer_name, phone=data.customer_phone))
+        db.flush()
+    elif customer.name != data.customer_name:
+        customer.name = data.customer_name
+
+    order = OrderService(db).create(OrderCreate(
+        customer_id=customer.id,
+        payment_method=data.payment_method,
+        items=[OrderItemCreate(product_id=item.product_id, quantity=item.quantity) for item in data.items],
+    ))
+    return PublicOrderResponse(order_id=order.id, order_number=order.order_number, status=order.status.value, total=str(order.total))

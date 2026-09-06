@@ -23,6 +23,10 @@ class CustomerRepository:
         )
         return self.db.scalar(statement)
 
+    def get_by_phone(self, phone: str) -> Customer | None:
+        statement = select(Customer).where(Customer.phone == phone, Customer.active.is_(True))
+        return self.db.scalar(statement)
+
     def get_all(self) -> list[Customer]:
         statement = (
             select(Customer)
