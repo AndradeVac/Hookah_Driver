@@ -70,11 +70,11 @@ export function OrdersPage() {
             <div className="orders-column-heading"><h3>{column.title}</h3><span>{columnOrders.length}</span></div>
             <div className="orders-list">
               {columnOrders.length === 0 ? <div className="orders-empty">Nenhum pedido</div> : columnOrders.map((order) => (
-                <article key={order.id} className={`order-card order-card-${column.status.toLowerCase()}`}>
+                <article key={order.id} className={`order-card order-card-${column.status.toLowerCase()}`} role="button" tabIndex={0} onClick={() => navigate(`/orders/${order.id}`)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') navigate(`/orders/${order.id}`) }}>
                   <div className="order-topline"><span className="order-number">#{order.order_number}</span><span className="order-user">{customerNames.get(order.customer_id) ?? 'Cliente'}</span><span className="order-place">{formatTime(order.created_at)}</span></div>
                   <div className="order-product"><span className="product-tag">{order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</span><span className="product-name">{order.items.map((item) => `${item.quantity}x ${item.product_name}`).join(', ')}</span></div>
                   <div className="order-meta"><span className="order-price">{formatMoney(order.total)}</span><span>{order.payment_method}</span></div>
-                  {column.next && <button className={`order-action order-action-${column.status.toLowerCase()}`} onClick={() => void advanceOrder(order, column.next)} disabled={updatingId === order.id}>{updatingId === order.id ? <LoaderCircle className="spin" size={15} /> : <ArrowRight size={15} />}{updatingId === order.id ? 'Atualizando...' : column.action}</button>}
+                  {column.next && <button className={`order-action order-action-${column.status.toLowerCase()}`} onClick={(event) => { event.stopPropagation(); void advanceOrder(order, column.next) }} disabled={updatingId === order.id}>{updatingId === order.id ? <LoaderCircle className="spin" size={15} /> : <ArrowRight size={15} />}{updatingId === order.id ? 'Atualizando...' : column.action}</button>}
                 </article>
               ))}
             </div>
