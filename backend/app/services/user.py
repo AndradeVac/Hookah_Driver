@@ -4,7 +4,7 @@ from app.core.exceptions import NotFoundError
 from app.core.exceptions import AuthenticationError
 from app.models.user import User
 from app.repositories.user import UserRepository
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserStatusUpdate
 from pwdlib import PasswordHash
 
 
@@ -34,6 +34,15 @@ class UserService:
 
     def get_all(self) -> list[User]:
         return self.repository.get_all()
+
+    def update_status(self, user_id, data: UserStatusUpdate) -> User:
+        user = self.repository.get_by_id(user_id, include_inactive=True)
+        if user is None:
+            raise NotFoundError("Usuário não encontrado.")
+        user.active = data.active
+        self.repository.update(user)
+        self.db.commit()
+        return user
 
     def verify_password(self, plain_password: str, password_hash: str) -> bool:
         return self.password_hash.verify(plain_password, password_hash)

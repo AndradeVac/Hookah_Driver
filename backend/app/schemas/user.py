@@ -25,6 +25,10 @@ class UserResponse(BaseModel):
     updated_at: datetime
 
 
+class UserStatusUpdate(BaseModel):
+    active: bool
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)

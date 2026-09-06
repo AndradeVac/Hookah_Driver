@@ -5,6 +5,7 @@ import { CategoriesPage } from '../features/categories/CategoriesPage'
 import { ProductsPage } from '../features/products/ProductsPage'
 import { FlavorsPage } from '../features/flavors/FlavorsPage'
 import { CustomersPage } from '../features/customers/CustomersPage'
+import { UsersPage } from '../features/users/UsersPage'
 import { LoginPage } from '../features/auth/LoginPage'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute'
 import { DashboardOverviewPage } from '../features/dashboard/DashboardOverviewPage'
@@ -30,6 +31,7 @@ export function AppRouter() {
             <Route path="/flavors" element={<FlavorsPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/users" element={<UsersPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -10,6 +10,7 @@ import {
   Package,
   Tags,
   UsersRound,
+  UserCog,
   X,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -23,6 +24,7 @@ const navigation = [
   { label: 'Marcas', to: '/brands', icon: Tags },
   { label: 'Categorias', to: '/categories', icon: Boxes },
   { label: 'Clientes', to: '/customers', icon: UsersRound },
+  { label: 'Equipe', to: '/users', icon: UserCog },
 ]
 
 export function AppShell() {
@@ -63,7 +65,13 @@ export function AppShell() {
             </NavLink>
           ))}
           <span className="nav-label">Relacionamento</span>
-          {navigation.slice(6).map(({ label, to, icon: Icon }) => (
+          {navigation.slice(6, 7).map(({ label, to, icon: Icon }) => (
+            <NavLink key={to} to={to} onClick={() => setOpen(false)}>
+              <Icon size={18} strokeWidth={1.8} /> {label}
+            </NavLink>
+          ))}
+          <span className="nav-label">Administração</span>
+          {navigation.slice(7).map(({ label, to, icon: Icon }) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}>
               <Icon size={18} strokeWidth={1.8} /> {label}
             </NavLink>
