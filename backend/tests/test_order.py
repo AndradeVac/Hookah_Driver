@@ -115,6 +115,28 @@ def test_create_order_calculates_totals_and_history(monkeypatch):
     assert order.status_history[0].status is OrderStatus.RECEIVED
 
 
+def test_create_order_keeps_price_snapshot(monkeypatch):
+    customer = type("Customer", (), {"id": uuid4()})()
+    product = type(
+        "Product",
+        (),
+        {"id": uuid4(), "name": "Produto", "price": Decimal("12.50")},
+    )()
+    service, _ = build_service(monkeypatch, customer, {product.id: product})
+
+    order = service.create(
+        OrderCreate(
+            customer_id=customer.id,
+            payment_method="PIX",
+            items=[OrderItemCreate(product_id=product.id, quantity=2)],
+        )
+    )
+    product.price = Decimal("99.99")
+
+    assert order.items[0].unit_price == Decimal("12.50")
+    assert order.items[0].total_price == Decimal("25.00")
+
+
 def test_create_order_rejects_missing_customer(monkeypatch):
     service, _ = build_service(monkeypatch, None, {})
 
@@ -140,6 +162,53 @@ def test_create_order_rejects_missing_product(monkeypatch):
                 items=[OrderItemCreate(product_id=uuid4(), quantity=1)],
             )
         )
+
+
+def test_create_order_rejects_inactive_product(monkeypatch):
+    customer = type("Customer", (), {"id": uuid4()})()
+    product = type(
+        "Product",
+        (),
+        {"id": uuid4(), "name": "Produto inativo", "price": Decimal("10.00"), "active": False},
+    )()
+    service, _ = build_service(monkeypatch, customer, {product.id: product})
+
+    with pytest.raises(ValueError, match="Produto não encontrado"):
+        service.create(
+            OrderCreate(
+                customer_id=customer.id,
+                payment_method="CARD",
+                items=[OrderItemCreate(product_id=product.id, quantity=1)],
+            )
+        )
+
+
+def test_create_order_rejects_inactive_customer(monkeypatch):
+    customer = type("Customer", (), {"id": uuid4(), "active": False})()
+    service, _ = build_service(monkeypatch, customer, {})
+
+    with pytest.raises(ValueError, match="Cliente não encontrado"):
+        service.create(
+            OrderCreate(
+                customer_id=customer.id,
+                payment_method="PIX",
+                items=[OrderItemCreate(product_id=uuid4(), quantity=1)],
+            )
+        )
+
+
+def test_order_create_rejects_empty_items():
+    with pytest.raises(ValueError):
+        OrderCreate(
+            customer_id=uuid4(),
+            payment_method="PIX",
+            items=[],
+        )
+
+
+def test_order_item_rejects_zero_quantity():
+    with pytest.raises(ValueError):
+        OrderItemCreate(product_id=uuid4(), quantity=0)
 
 
 def test_update_order_status_records_history(monkeypatch):
@@ -182,6 +251,26 @@ def test_update_order_status_rejects_finished_transition(monkeypatch):
         service.update_status(
             order.id,
             OrderStatusUpdate(status=OrderStatus.CANCELLED),
+        )
+
+
+def test_update_order_status_rejects_cancelled_transition(monkeypatch):
+    customer = type("Customer", (), {"id": uuid4()})()
+    service, repository = build_service(monkeypatch, customer, {})
+    order = Order(
+        id=uuid4(),
+        customer_id=customer.id,
+        payment_method="PIX",
+        status=OrderStatus.CANCELLED,
+        subtotal=Decimal("0.00"),
+        total=Decimal("0.00"),
+    )
+    repository.order = order
+
+    with pytest.raises(ValueError, match="Não é possível alterar"):
+        service.update_status(
+            order.id,
+            OrderStatusUpdate(status=OrderStatus.READY),
         )
 
 

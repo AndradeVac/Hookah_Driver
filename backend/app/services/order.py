@@ -30,7 +30,7 @@ class OrderService:
 
     def create(self, data: OrderCreate) -> Order:
         customer = self.customer_repository.get_by_id(data.customer_id)
-        if customer is None:
+        if customer is None or not getattr(customer, "active", True):
             raise NotFoundError("Cliente não encontrado.")
 
         subtotal = Decimal("0.00")
@@ -44,7 +44,7 @@ class OrderService:
 
         for item_data in data.items:
             product = self.product_repository.get_by_id(item_data.product_id)
-            if product is None:
+            if product is None or not getattr(product, "active", True):
                 raise NotFoundError(
                     f"Produto não encontrado: {item_data.product_id}."
                 )
