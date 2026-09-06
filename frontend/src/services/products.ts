@@ -19,6 +19,7 @@ export async function getProducts() {
 
 export async function createProduct(payload: {
   category_id: string
+  flavor_id?: string
   name: string
   description?: string
   price: string

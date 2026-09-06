@@ -1,12 +1,18 @@
 import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { getCategories, type Category } from '../../services/categories'
+import { getBrands, type Brand } from '../../services/brands'
+import { getFlavors, type Flavor } from '../../services/flavors'
 import { createProduct, getProducts, updateProductStatus, type Product } from '../../services/products'
 
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [flavors, setFlavors] = useState<Flavor[]>([])
   const [categoryId, setCategoryId] = useState('')
+  const [brandId, setBrandId] = useState('')
+  const [flavorId, setFlavorId] = useState('')
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [description, setDescription] = useState('')
@@ -17,12 +23,15 @@ export function ProductsPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([getProducts(), getCategories()])
-      .then(([loadedProducts, loadedCategories]) => {
+    Promise.all([getProducts(), getCategories(), getBrands(), getFlavors()])
+      .then(([loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {
         setProducts(loadedProducts)
         const activeCategories = loadedCategories.filter((category) => category.active)
         setCategories(activeCategories)
+        setBrands(loadedBrands.filter((brand) => brand.active))
+        setFlavors(loadedFlavors.filter((flavor) => flavor.active))
         setCategoryId(activeCategories[0]?.id ?? '')
+        setBrandId(loadedBrands.find((brand) => brand.active)?.id ?? '')
       })
       .catch(() => setError('Não foi possível carregar produtos e categorias.'))
       .finally(() => setIsLoading(false))
@@ -37,7 +46,8 @@ export function ProductsPage() {
     try {
       const product = await createProduct({
         category_id: categoryId,
-        name: name.trim(),
+        flavor_id: isRoshCategory ? flavorId : undefined,
+        name: isRoshCategory ? 'Rosh' : name.trim(),
         price: price.replace(',', '.'),
         description: description.trim() || undefined,
       })
@@ -45,6 +55,7 @@ export function ProductsPage() {
       setName('')
       setPrice('')
       setDescription('')
+      setFlavorId('')
     } catch {
       setError('Não foi possível criar o produto. Confira a categoria e o preço.')
     } finally {
@@ -72,6 +83,8 @@ export function ProductsPage() {
     products: visibleProducts.filter((product) => product.category_id === category.id),
   })).filter((group) => group.products.length > 0), [categories, visibleProducts])
   const displayCategoryName = (category: Category) => category.name.toLowerCase() === 'essências' ? 'Rosh' : category.name
+  const isRoshCategory = categories.find((category) => category.id === categoryId)?.name.toLowerCase() === 'rosh'
+  const brandFlavors = flavors.filter((flavor) => flavor.brand_id === brandId)
 
   return (
     <section className="page-content simple-page products-page">
@@ -83,10 +96,10 @@ export function ProductsPage() {
           <select id="product-category" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} disabled={categories.length === 0}>
             {categories.length === 0 ? <option value="">Nenhuma categoria ativa</option> : categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex.: Coca-Cola" maxLength={120} />
+          {isRoshCategory ? <><select value={brandId} onChange={(event) => { setBrandId(event.target.value); setFlavorId('') }}><option value="">Selecione a marca</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select><select value={flavorId} onChange={(event) => setFlavorId(event.target.value)} disabled={!brandId}><option value="">Selecione o sabor</option>{brandFlavors.map((flavor) => <option key={flavor.id} value={flavor.id}>{flavor.name}</option>)}</select></> : <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex.: Coca-Cola" maxLength={120} />}
           <input value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Preço" inputMode="decimal" />
           <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Descrição (opcional)" maxLength={500} />
-          <button className="primary-button resource-submit" type="submit" disabled={isSaving || !categoryId || !name.trim() || !price}>
+          <button className="primary-button resource-submit" type="submit" disabled={isSaving || !categoryId || (!isRoshCategory && !name.trim()) || (isRoshCategory && !flavorId) || !price}>
             {isSaving ? <LoaderCircle className="spin" size={16} /> : <Plus size={16} />}
             {isSaving ? 'Salvando...' : 'Adicionar produto'}
           </button>
