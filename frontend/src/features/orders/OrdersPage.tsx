@@ -31,13 +31,17 @@ export function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | OrderStatus>('ALL')
 
   useEffect(() => {
-    Promise.all([getOrders(), getCustomers()])
+    const loadBoard = () => Promise.all([getOrders(), getCustomers()])
       .then(([loadedOrders, loadedCustomers]) => {
         setOrders(loadedOrders)
         setCustomers(loadedCustomers)
       })
       .catch(() => setError('Não foi possível carregar os pedidos.'))
       .finally(() => setIsLoading(false))
+
+    void loadBoard()
+    const refresh = window.setInterval(() => void loadBoard(), 20000)
+    return () => window.clearInterval(refresh)
   }, [])
 
   async function advanceOrder(order: Order, nextStatus?: OrderStatus) {

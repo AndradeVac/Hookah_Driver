@@ -39,6 +39,7 @@ class OrderStatusHistoryResponse(BaseModel):
     status: OrderStatus
     changed_by_user_id: UUID | None
     created_at: datetime
+    reason: str | None
 
 
 class OrderResponse(BaseModel):
@@ -59,3 +60,4 @@ class OrderResponse(BaseModel):
 
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
+    reason: str | None = Field(default=None, max_length=500)

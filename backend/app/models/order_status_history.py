@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -59,3 +59,5 @@ class OrderStatusHistory(Base):
         "User",
         back_populates="status_changes",
     )
+
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

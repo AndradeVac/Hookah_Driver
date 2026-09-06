@@ -155,7 +155,7 @@ async def test_orders_api_end_to_end():
                 await client.patch(
                     f"/orders/{cancelled_id}/status",
                     headers=headers,
-                    json={"status": "CANCELLED"},
+                        json={"status": "CANCELLED", "reason": "Cliente desistiu do pedido"},
                 )
             ).status_code == 200
             invalid_after_cancel = await client.patch(

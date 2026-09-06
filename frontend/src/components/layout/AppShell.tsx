@@ -58,7 +58,7 @@ export function AppShell() {
 
         <nav className="main-nav" aria-label="Navegação principal">
           <span className="nav-label">Operação</span>
-          {navigation.slice(0, 2).map(({ label, to, icon: Icon }) => (
+          {navigation.slice(user?.role === 'ADMIN' ? 0 : 1, 2).map(({ label, to, icon: Icon }) => (
             <NavLink key={to} to={to} end={to === '/'} onClick={() => setOpen(false)}>
               <Icon size={18} strokeWidth={1.8} /> {label}
             </NavLink>

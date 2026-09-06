@@ -57,6 +57,22 @@
       } finally {
         setIsUpdating(false)
       }
+
+    }
+
+    async function cancelOrder() {
+      if (!order || !window.confirm('Cancelar este pedido?')) return
+      const reason = window.prompt('Informe o motivo do cancelamento:')?.trim()
+      if (!reason) return
+      setIsUpdating(true)
+      setError('')
+      try {
+        setOrder(await updateOrderStatus(order.id, 'CANCELLED', reason))
+      } catch {
+        setError('Não foi possível cancelar o pedido.')
+      } finally {
+        setIsUpdating(false)
+      }
     }
 
     if (isLoading) return <div className="auth-loading"><LoaderCircle className="spin" size={20} />Carregando pedido...</div>
@@ -82,6 +98,7 @@
             </div>
             <div className="order-total-box"><span>Valor do pedido</span><strong>{formatMoney(order.total)}</strong></div>
             {nextStatus && <button className="primary-button detail-action" type="button" onClick={() => void advanceStatus()} disabled={isUpdating}>{isUpdating ? <LoaderCircle className="spin" size={16} /> : <ArrowRight size={16} />}{isUpdating ? 'Atualizando...' : `Avançar para ${statusSteps.find((step) => step.status === nextStatus)?.label}`}</button>}
+            {order.status !== 'FINISHED' && order.status !== 'CANCELLED' && <button className="danger-button" type="button" onClick={() => void cancelOrder()} disabled={isUpdating}>Cancelar pedido</button>}
           </article>
           <aside className="detail-panel detail-panel-side"><h3>Linha do tempo</h3><ul className="timeline">{statusSteps.map((step, index) => <li key={step.status} className={index <= statusIndex ? 'active' : ''}><span className="dot" /><span className="timeline-label">{step.label}</span><span className="timeline-time">{formatTime(historyByStatus.get(step.status))}</span></li>)}</ul></aside>
         </div>

@@ -35,7 +35,7 @@ export function AppRouter() {
             </Route>
           </Route>
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/orders" replace />} />
       </Routes>
     </BrowserRouter>
   )

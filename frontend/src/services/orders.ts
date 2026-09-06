@@ -23,6 +23,7 @@ export type Order = {
     status: OrderStatus
     changed_by_user_id: string | null
     created_at: string
+    reason: string | null
   }>
 }
 
@@ -45,7 +46,7 @@ export async function createOrder(payload: {
   return data
 }
 
-export async function updateOrderStatus(id: string, status: OrderStatus) {
-  const { data } = await api.patch<Order>(`/orders/${id}/status`, { status })
+export async function updateOrderStatus(id: string, status: OrderStatus, reason?: string) {
+  const { data } = await api.patch<Order>(`/orders/${id}/status`, { status, reason })
   return data
 }

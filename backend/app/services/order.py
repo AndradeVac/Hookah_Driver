@@ -100,10 +100,12 @@ class OrderService:
             raise BusinessRuleError(
                 f"Não é possível alterar {order.status.value} para {data.status.value}."
             )
+        if data.status is OrderStatus.CANCELLED and not data.reason:
+            raise BusinessRuleError("Informe o motivo do cancelamento.")
 
         order.status = data.status
         order.status_history.append(
-            OrderStatusHistory(status=data.status)
+            OrderStatusHistory(status=data.status, reason=data.reason)
         )
         try:
             self.repository.update(order)
