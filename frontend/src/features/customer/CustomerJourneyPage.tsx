@@ -39,6 +39,7 @@ export function CustomerJourneyPage() {
   const [search, setSearch] = useState('')
   const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('hookah-customer-favorites') ?? '[]'))
   const [lastOrder, setLastOrder] = useState<CartItem[]>(() => JSON.parse(localStorage.getItem('hookah-customer-last-order') ?? '[]'))
+  const [liveStatus, setLiveStatus] = useState('RECEIVED')
 
   useEffect(() => {
     Promise.all([getBrands(), getFlavors(), getCategories(), getProducts()]).then(([loadedBrands, loadedFlavors, loadedCategories, loadedProducts]) => {
@@ -51,10 +52,17 @@ export function CustomerJourneyPage() {
 
   useEffect(() => {
     if (step !== 'success' || !order?.public_token) return
-    const refresh = window.setInterval(() => {
-      void getPublicOrder(order.public_token).then((tracking) => setOrder((current) => current ? { ...current, status: tracking.status, total: tracking.total } : current))
-    }, 15000)
-    return () => window.clearInterval(refresh)
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const socket = new WebSocket(`${protocol}://${window.location.host}/api/public/ws/orders/${order.public_token}`)
+    socket.onmessage = (event) => {
+      const update = JSON.parse(event.data) as { status?: string; total?: string }
+      if (!update.status) return
+      setLiveStatus(update.status)
+      setOrder((current) => current ? { ...current, status: update.status ?? current.status, total: update.total ?? current.total } : current)
+      if (update.status === 'READY') setError('Seu pedido está pronto para retirada.')
+    }
+    socket.onerror = () => void getPublicOrder(order.public_token).then((tracking) => setOrder((current) => current ? { ...current, status: tracking.status, total: tracking.total } : current))
+    return () => socket.close()
   }, [order?.public_token, step])
 
   const roshCategory = categories.find((item) => ['rosh', 'essências'].includes(item.name.toLowerCase()))
@@ -70,7 +78,7 @@ export function CustomerJourneyPage() {
   const back = () => setStep(step === 'product' ? 'category' : step === 'category' ? 'menu' : step === 'brands' ? 'menu' : step === 'flavors' ? 'brands' : step === 'rosh' ? 'flavors' : step === 'cart' ? 'menu' : 'menu')
   const extras = categories.find((category) => category.name.toLowerCase() === 'adicionais')
   const extraProducts = extras ? products.filter((product) => product.category_id === extras.id) : []
-  async function submit() { if (!name || !phone || !cart.length) return; setSending(true); try { setOrder(await createPublicOrder({ customer_name: name, customer_phone: phone, payment_method: payment, items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })) })); localStorage.setItem('hookah-customer-last-order', JSON.stringify(cart)); setLastOrder(cart); setStep('success') } catch { setError('Não foi possível confirmar o pedido.') } finally { setSending(false) } }
+  async function submit() { if (!name || !phone || !cart.length) return; setSending(true); try { const created = await createPublicOrder({ customer_name: name, customer_phone: phone, payment_method: payment, items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })) }); localStorage.setItem('hookah-customer-last-order', JSON.stringify(cart)); setLastOrder(cart); setLiveStatus(created.status); setOrder(created); setStep('success') } catch { setError('Não foi possível confirmar o pedido.') } finally { setSending(false) } }
 
   function toggleFavorite(productId: string) { setFavorites((current) => { const next = current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId]; localStorage.setItem('hookah-customer-favorites', JSON.stringify(next)); return next }) }
 
@@ -87,7 +95,7 @@ export function CustomerJourneyPage() {
     {step === 'cart' && <section className="customer-panel"><button className="customer-back" onClick={() => setStep('menu')}><ArrowLeft size={16} /> Menu</button><h2>Resumo do pedido</h2>{cart.length ? cart.map((item) => <div className="customer-cart-row" key={`${item.product.id}-${item.variation}`}><img src={imageFor(item.product.name)} alt="" /><div><strong>{item.product.name}</strong><span>{item.variation || ''}{item.notes ? ` · ${item.notes}` : ''}</span></div><div><button onClick={() => change(item, -1)}><Minus size={14} /></button><b>{item.quantity}</b><button onClick={() => change(item, 1)}><Plus size={14} /></button></div></div>) : <div className="customer-empty">Seu pedido está vazio.</div>}<div className="customer-total">Total <strong>{money(total)}</strong></div><button className="customer-primary" disabled={!cart.length} onClick={() => setStep('customer')}>Confirmar pedido <ArrowRight size={16} /></button></section>}
     {step === 'customer' && <section className="customer-panel"><button className="customer-back" onClick={() => setStep('cart')}><ArrowLeft size={16} /> Carrinho</button><h2>Confirmar seus dados</h2><p className="customer-muted">{name} · {phone}</p><button className="customer-primary" onClick={() => setStep('payment')}>Continuar <ArrowRight size={16} /></button></section>}
     {step === 'payment' && <section className="customer-panel"><button className="customer-back" onClick={() => setStep('customer')}><ArrowLeft size={16} /> Dados</button><h2>Pagamento</h2><div className="payment-choice"><button className={payment === 'PIX' ? 'active' : ''} onClick={() => setPayment('PIX')}>PIX</button><button className={payment === 'CARD' ? 'active' : ''} onClick={() => setPayment('CARD')}>Cartão</button></div><div className="customer-total">Total <strong>{money(total)}</strong></div><button className="customer-primary" disabled={sending} onClick={() => void submit()}>{sending ? 'Enviando...' : 'Simular pagamento aprovado'} <Check size={16} /></button></section>}
-    {step === 'success' && order && <section className="customer-success"><div className="success-mark"><Check size={30} /></div><span>{order.status === 'FINISHED' ? 'Pedido entregue' : order.status === 'CANCELLED' ? 'Pedido cancelado' : 'Pedido recebido'}</span><h2>Pedido #{order.order_number}</h2><p>{order.status === 'PREPARING' ? 'Seu pedido está sendo preparado.' : order.status === 'READY' ? 'Seu pedido está pronto.' : order.status === 'FINISHED' ? 'Obrigado por pedir com a gente.' : order.status === 'CANCELLED' ? 'Esse pedido foi cancelado.' : 'Seu pedido foi enviado para o lounge.'}</p><strong>{money(order.total)}</strong><div className="customer-status-track"><span className={order.status === 'RECEIVED' ? 'active' : ''}>Pedido recebido</span><span className={order.status === 'PREPARING' ? 'active' : ''}>Em preparo</span><span className={order.status === 'READY' ? 'active' : ''}>Pronto</span><span className={order.status === 'FINISHED' ? 'active' : ''}>Entregue</span></div><button className="customer-primary" type="button" onClick={() => { setCart([]); setOrder(null); setStep('menu') }}>Voltar ao início</button></section>}
+    {step === 'success' && order && <section className="customer-success"><div className="success-mark"><Check size={30} /></div><span>{liveStatus === 'FINISHED' ? 'Pedido entregue' : liveStatus === 'CANCELLED' ? 'Pedido cancelado' : liveStatus === 'READY' ? 'Pedido pronto' : 'Pedido recebido'}</span><h2>Pedido #{order.order_number}</h2><p>{liveStatus === 'PREPARING' ? 'Seu pedido está sendo preparado.' : liveStatus === 'READY' ? 'Seu pedido está pronto.' : liveStatus === 'FINISHED' ? 'Obrigado por pedir com a gente.' : liveStatus === 'CANCELLED' ? 'Esse pedido foi cancelado.' : 'Seu pedido foi enviado para o lounge.'}</p><strong>{money(order.total)}</strong><div className="customer-status-track"><span className={liveStatus === 'RECEIVED' ? 'active' : ''}>Pedido recebido</span><span className={liveStatus === 'PREPARING' ? 'active' : ''}>Em preparo</span><span className={liveStatus === 'READY' ? 'active' : ''}>Pronto</span><span className={liveStatus === 'FINISHED' ? 'active' : ''}>Entregue</span></div><button className="customer-primary" type="button" onClick={() => { setCart([]); setOrder(null); setStep('menu') }}>Voltar ao início</button></section>}
     {step !== 'register' && step !== 'success' && <button className="customer-cart-button" onClick={() => setStep('cart')}><ShoppingBag size={18} /><span>{cart.reduce((sum, item) => sum + item.quantity, 0)} itens</span><strong>{money(total)}</strong></button>}
   </main>
 }

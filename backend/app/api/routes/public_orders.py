@@ -1,6 +1,8 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+import asyncio
+
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -13,6 +15,27 @@ from app.services.order import OrderService
 
 
 router = APIRouter(prefix="/public", tags=["Public customer"])
+
+
+@router.websocket("/ws/orders/{public_token}")
+async def public_order_socket(websocket: WebSocket, public_token: UUID, db: Session = Depends(get_db)):
+    await websocket.accept()
+    try:
+        last_status = None
+        while True:
+            db.expire_all()
+            order = db.query(Order).filter_by(public_token=public_token).first()
+            if order is None:
+                await websocket.send_json({"error": "Pedido não encontrado"})
+                break
+            if order.status.value != last_status:
+                await websocket.send_json({"order_number": order.order_number, "status": order.status.value, "total": str(order.total)})
+                last_status = order.status.value
+            if order.status.value in {"FINISHED", "CANCELLED"}:
+                break
+            await asyncio.sleep(3)
+    except (WebSocketDisconnect, RuntimeError):
+        pass
 
 
 @router.post("/orders", response_model=PublicOrderResponse, status_code=201)

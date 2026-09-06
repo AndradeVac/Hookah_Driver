@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import BusinessRuleError, NotFoundError
 from app.core.exceptions import AuthenticationError
 from app.models.user import User, UserRole
+from app.models.audit_log import AuditLog
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserStatusUpdate
 from pwdlib import PasswordHash
@@ -44,6 +45,7 @@ class UserService:
         if not data.active and user.role is UserRole.ADMIN and self.repository.count_active_admins() <= 1:
             raise BusinessRuleError("O sistema precisa manter pelo menos um administrador ativo.")
         user.active = data.active
+        self.db.add(AuditLog(actor_user_id=actor.id, action="USER_STATUS_CHANGED", entity_type="USER", entity_id=user.id, details=f"active={data.active}"))
         self.repository.update(user)
         self.db.commit()
         return user

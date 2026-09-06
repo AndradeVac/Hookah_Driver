@@ -1,5 +1,6 @@
 from app.models.brand import Brand
 from app.models.category import Category
+from app.models.audit_log import AuditLog
 from app.models.customer import Customer
 from app.models.flavor import Flavor
 from app.models.order import Order, OrderStatus, PaymentMethod
@@ -12,6 +13,7 @@ from app.models.category import Category
 
 __all__ = [
     "Brand",
+    "AuditLog",
     "Category",
     "Customer",
     "Flavor",

@@ -7,6 +7,8 @@ from app.core.exceptions import BusinessRuleError, NotFoundError
 from app.models.order import Order, OrderStatus
 from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
+from app.models.audit_log import AuditLog
+from app.models.user import User
 from app.repositories.customer import CustomerRepository
 from app.repositories.order import OrderRepository
 from app.repositories.product import ProductRepository
@@ -92,6 +94,7 @@ class OrderService:
         self,
         order_id: UUID,
         data: OrderStatusUpdate,
+        actor: User | None = None,
     ) -> Order:
         order = self.get_by_id(order_id)
         allowed = self.allowed_transitions[order.status]
@@ -107,6 +110,8 @@ class OrderService:
         order.status_history.append(
             OrderStatusHistory(status=data.status, reason=data.reason)
         )
+        if actor is not None:
+            self.db.add(AuditLog(actor_user_id=actor.id, action="ORDER_STATUS_CHANGED", entity_type="ORDER", entity_id=order.id, details=f"status={data.status.value}"))
         try:
             self.repository.update(order)
             self.db.commit()

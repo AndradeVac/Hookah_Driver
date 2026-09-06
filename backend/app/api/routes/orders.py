@@ -43,6 +43,6 @@ def update_order_status(
     order_id: UUID,
     data: OrderStatusUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
-    return OrderService(db).update_status(order_id, data)
+    return OrderService(db).update_status(order_id, data, current_user)
