@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { getBrands, type Brand } from '../../services/brands'
 import { createFlavor, getFlavors, updateFlavorStatus, type Flavor } from '../../services/flavors'
@@ -13,6 +13,7 @@ export function FlavorsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [listOpen, setListOpen] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -84,17 +85,18 @@ export function FlavorsPage() {
       <div className="resource-list">
         <div className="resource-list-header">
           <div><strong>{showAll ? 'Todos os sabores' : 'Sabores ativos'}</strong><span>{visibleFlavors.filter((flavor) => activeBrandIds.has(flavor.brand_id)).length} registros</span></div>
-          {inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
+          <button className="resource-filter" type="button" onClick={() => setListOpen((current) => !current)}><ChevronDown size={14} />{listOpen ? 'Recolher' : 'Exibir'}</button>
+          {listOpen && inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
             {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
             {showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}
           </button>}
         </div>
-        {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : flavorGroups.length === 0 ? <div className="resource-state">Nenhum sabor cadastrado ainda.</div> : flavorGroups.map(({ brand, flavors: brandFlavors }) => (
+        {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : flavorGroups.length === 0 ? <div className="resource-state">Nenhum sabor cadastrado ainda.</div> : flavorGroups.map(({ brand, flavors: brandFlavors }) => (
           <div className="product-category-group" key={brand.id}>
             <div className="product-category-heading"><h3>{brand.name}</h3><span>{brandFlavors.length} {brandFlavors.length === 1 ? 'sabor' : 'sabores'}</span></div>
             {brandFlavors.map((flavor) => <article className="resource-row" key={flavor.id}><div><strong>{flavor.name}</strong><span className={flavor.active ? 'status-active' : 'status-inactive'}>{flavor.active ? (flavor.description || 'Ativo') : 'Inativo'}</span></div><button className={flavor.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(flavor)} disabled={updatingId === flavor.id} aria-label={`${flavor.active ? 'Desativar' : 'Ativar'} ${flavor.name}`} >{updatingId === flavor.id ? <LoaderCircle className="spin" size={16} /> : flavor.active ? <CircleOff size={16} /> : <Check size={16} />}</button></article>)}
           </div>
-        ))}
+        )))}
       </div>
     </section>
   )

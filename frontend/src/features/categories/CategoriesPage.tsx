@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useState } from 'react'
 import { createCategory, getCategories, updateCategoryStatus, type Category } from '../../services/categories'
 
@@ -9,6 +9,7 @@ export function CategoriesPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [listOpen, setListOpen] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -69,19 +70,20 @@ export function CategoriesPage() {
       <div className="resource-list">
         <div className="resource-list-header">
           <div><strong>{showAll ? 'Todas as categorias' : 'Categorias ativas'}</strong><span>{visibleCategories.length} registros</span></div>
-          {inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
+          <button className="resource-filter" type="button" onClick={() => setListOpen((current) => !current)}><ChevronDown size={14} />{listOpen ? 'Recolher' : 'Exibir'}</button>
+          {listOpen && inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
             {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
             {showAll ? 'Ocultar inativas' : `Ver todas (${inactiveCount})`}
           </button>}
         </div>
-        {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : visibleCategories.length === 0 ? <div className="resource-state">Nenhuma categoria ativa cadastrada.</div> : visibleCategories.map((category) => (
+        {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : visibleCategories.length === 0 ? <div className="resource-state">Nenhuma categoria ativa cadastrada.</div> : visibleCategories.map((category) => (
           <article className="resource-row" key={category.id}>
             <div><strong>{category.name}</strong><span className={category.active ? 'status-active' : 'status-inactive'}>{category.active ? 'Ativa' : 'Inativa'}</span></div>
             <button className={category.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(category)} disabled={updatingId === category.id} aria-label={`${category.active ? 'Desativar' : 'Ativar'} ${category.name}`}>
               {updatingId === category.id ? <LoaderCircle className="spin" size={16} /> : category.active ? <CircleOff size={16} /> : <Check size={16} />}
             </button>
           </article>
-        ))}
+        )))}
       </div>
     </section>
   )

@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus, Search } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, CircleOff, Eye, EyeOff, LoaderCircle, Plus, Search } from 'lucide-react'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { createCustomer, getCustomers, updateCustomerStatus, type Customer } from '../../services/customers'
 
@@ -8,6 +8,7 @@ export function CustomersPage() {
   const [phone, setPhone] = useState('')
   const [search, setSearch] = useState('')
   const [showAll, setShowAll] = useState(false)
+  const [listOpen, setListOpen] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -71,15 +72,16 @@ export function CustomersPage() {
       <div className="resource-list customers-list">
         <div className="resource-list-header">
           <div><strong>{showAll ? 'Todos os clientes' : 'Clientes ativos'}</strong><span>{visibleCustomers.length} registros</span></div>
-          <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)} disabled={!showAll && inactiveCount === 0}>{showAll ? <EyeOff size={14} /> : <Eye size={14} />}{showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}</button>
+          <button className="resource-filter" type="button" onClick={() => setListOpen((current) => !current)}><ChevronDown size={14} />{listOpen ? 'Recolher' : 'Exibir'}</button>
+          {listOpen && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)} disabled={!showAll && inactiveCount === 0}>{showAll ? <EyeOff size={14} /> : <Eye size={14} />}{showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}</button>}
         </div>
         <label className="resource-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome ou telefone" /></label>
-        {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando clientes...</div> : visibleCustomers.length === 0 ? <div className="resource-state">Nenhum cliente encontrado.</div> : visibleCustomers.map((customer) => (
+        {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando clientes...</div> : visibleCustomers.length === 0 ? <div className="resource-state">Nenhum cliente encontrado.</div> : visibleCustomers.map((customer) => (
           <article className="resource-row customer-row" key={customer.id}>
             <div><strong>{customer.name}</strong><span className={customer.active ? 'status-active' : 'status-inactive'}>{customer.phone || 'Sem telefone'} · {customer.active ? 'Ativo' : 'Inativo'}</span></div>
             <button className={customer.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(customer)} disabled={updatingId === customer.id} aria-label={`${customer.active ? 'Desativar' : 'Ativar'} ${customer.name}`}>{updatingId === customer.id ? <LoaderCircle className="spin" size={16} /> : customer.active ? <CircleOff size={16} /> : <Check size={16} />}</button>
           </article>
-        ))}
+        )))}
       </div>
     </section>
   )

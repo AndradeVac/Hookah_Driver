@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useState } from 'react'
 import { createBrand, getBrands, updateBrandStatus, type Brand } from '../../services/brands'
 
@@ -9,6 +9,7 @@ export function BrandsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const [listOpen, setListOpen] = useState(true)
   const [error, setError] = useState('')
 
   async function loadBrands() {
@@ -86,12 +87,13 @@ export function BrandsPage() {
       <div className="resource-list">
         <div className="resource-list-header">
           <div><strong>{showAll ? 'Todas as marcas' : 'Marcas ativas'}</strong><span>{visibleBrands.length} registros</span></div>
-          {inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
+          <button className="resource-filter" type="button" onClick={() => setListOpen((current) => !current)}><ChevronDown size={14} />{listOpen ? 'Recolher' : 'Exibir'}</button>
+          {listOpen && inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>
             {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
             {showAll ? 'Ocultar inativas' : `Ver todas (${inactiveCount})`}
           </button>}
         </div>
-        {isLoading ? (
+        {listOpen && (isLoading ? (
           <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div>
         ) : visibleBrands.length === 0 ? (
           <div className="resource-state">Nenhuma marca ativa cadastrada.</div>
@@ -104,7 +106,7 @@ export function BrandsPage() {
               </button>
             </article>
           ))
-        )}
+        ))}
       </div>
     </section>
   )

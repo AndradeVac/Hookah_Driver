@@ -1,4 +1,4 @@
-import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { getCategories, type Category } from '../../services/categories'
 import { getBrands, type Brand } from '../../services/brands'
@@ -19,6 +19,7 @@ export function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [showAll, setShowAll] = useState(false)
+  const [listOpen, setListOpen] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -39,7 +40,7 @@ export function ProductsPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!categoryId || !name.trim() || !price) return
+    if (!categoryId || (!isRoshCategory && !name.trim()) || (isRoshCategory && !flavorId) || !price) return
 
     setIsSaving(true)
     setError('')
@@ -108,17 +109,18 @@ export function ProductsPage() {
       <div className="resource-list">
         <div className="resource-list-header">
           <div><strong>{showAll ? 'Todos os produtos' : 'Produtos ativos'}</strong><span>{visibleProducts.length} registros</span></div>
-          <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)} disabled={!showAll && inactiveCount === 0}>
+          <button className="resource-filter" type="button" onClick={() => setListOpen((current) => !current)}><ChevronDown size={14} />{listOpen ? 'Recolher' : 'Exibir'}</button>
+          {listOpen && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)} disabled={!showAll && inactiveCount === 0}>
             {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
             {showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}
-          </button>
+          </button>}
         </div>
-        {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : productsByCategory.length === 0 ? <div className="resource-state">Nenhum produto cadastrado ainda.</div> : productsByCategory.map(({ category, products: categoryProducts }) => (
+        {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : productsByCategory.length === 0 ? <div className="resource-state">Nenhum produto cadastrado ainda.</div> : productsByCategory.map(({ category, products: categoryProducts }) => (
           <div className="product-category-group" key={category.id}>
             <div className="product-category-heading"><h3>{displayCategoryName(category)}</h3><span>{categoryProducts.length} {categoryProducts.length === 1 ? 'item' : 'itens'}</span></div>
             {categoryProducts.map((product) => <article className="resource-row" key={product.id}><div><strong>{product.name}</strong><span className={product.active ? '' : 'status-inactive'}>{product.description || (product.active ? 'Sem descrição' : 'Inativo')}</span></div><b className="product-price">R$ {Number(product.price).toFixed(2).replace('.', ',')}</b><button className={product.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(product)} disabled={updatingId === product.id} aria-label={`${product.active ? 'Desativar' : 'Ativar'} ${product.name}`}>{updatingId === product.id ? <LoaderCircle className="spin" size={16} /> : product.active ? <CircleOff size={16} /> : <Check size={16} />}</button></article>)}
           </div>
-        ))}
+        )))}
       </div>
     </section>
   )
