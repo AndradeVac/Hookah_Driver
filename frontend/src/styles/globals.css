@@ -995,6 +995,11 @@ button { cursor: pointer; }
   font-size: 10px;
 }
 
+.resource-filter:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 .resource-row {
   padding: 14px 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);

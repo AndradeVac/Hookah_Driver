@@ -26,3 +26,8 @@ export async function createProduct(payload: {
   const { data } = await api.post<Product>('/products', payload)
   return data
 }
+
+export async function updateProductStatus(id: string, active: boolean) {
+  const { data } = await api.patch<Product>(`/products/${id}`, { active })
+  return data
+}

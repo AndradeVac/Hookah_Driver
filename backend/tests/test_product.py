@@ -47,6 +47,9 @@ class FakeProductRepository:
             return self.product
         return None
 
+    def get_by_id_any_status(self, product_id):
+        return self.get_by_id(product_id)
+
     def update(self, product):
         return product
 

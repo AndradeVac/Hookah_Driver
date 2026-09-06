@@ -26,12 +26,13 @@ class ProductRepository:
 
         return self.db.scalar(statement)
 
+    def get_by_id_any_status(self, product_id: UUID) -> Product | None:
+        statement = select(Product).where(Product.id == product_id)
+
+        return self.db.scalar(statement)
+
     def get_all(self) -> list[Product]:
-        statement = (
-            select(Product)
-            .where(Product.active.is_(True))
-            .order_by(Product.name)
-        )
+        statement = select(Product).order_by(Product.name)
 
         return list(self.db.scalars(statement).all())
 

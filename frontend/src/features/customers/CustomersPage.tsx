@@ -71,7 +71,7 @@ export function CustomersPage() {
       <div className="resource-list customers-list">
         <div className="resource-list-header">
           <div><strong>{showAll ? 'Todos os clientes' : 'Clientes ativos'}</strong><span>{visibleCustomers.length} registros</span></div>
-          {inactiveCount > 0 && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)}>{showAll ? <EyeOff size={14} /> : <Eye size={14} />}{showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}</button>}
+          <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)} disabled={!showAll && inactiveCount === 0}>{showAll ? <EyeOff size={14} /> : <Eye size={14} />}{showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}</button>
         </div>
         <label className="resource-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome ou telefone" /></label>
         {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando clientes...</div> : visibleCustomers.length === 0 ? <div className="resource-state">Nenhum cliente encontrado.</div> : visibleCustomers.map((customer) => (

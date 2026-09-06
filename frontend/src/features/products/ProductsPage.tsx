@@ -1,7 +1,7 @@
-import { AlertCircle, LoaderCircle, Plus } from 'lucide-react'
+import { AlertCircle, Check, CircleOff, Eye, EyeOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { getCategories, type Category } from '../../services/categories'
-import { createProduct, getProducts, type Product } from '../../services/products'
+import { createProduct, getProducts, updateProductStatus, type Product } from '../../services/products'
 
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -12,6 +12,8 @@ export function ProductsPage() {
   const [description, setDescription] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -50,10 +52,25 @@ export function ProductsPage() {
     }
   }
 
+  async function handleStatusChange(product: Product) {
+    setUpdatingId(product.id)
+    setError('')
+    try {
+      const updatedProduct = await updateProductStatus(product.id, !product.active)
+      setProducts((current) => current.map((item) => item.id === product.id ? updatedProduct : item))
+    } catch {
+      setError('Não foi possível atualizar o status do produto.')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const inactiveCount = products.filter((product) => !product.active).length
+  const visibleProducts = showAll ? products : products.filter((product) => product.active)
   const productsByCategory = useMemo(() => categories.map((category) => ({
     category,
-    products: products.filter((product) => product.category_id === category.id),
-  })).filter((group) => group.products.length > 0), [categories, products])
+    products: visibleProducts.filter((product) => product.category_id === category.id),
+  })).filter((group) => group.products.length > 0), [categories, visibleProducts])
 
   return (
     <section className="page-content simple-page products-page">
@@ -75,11 +92,17 @@ export function ProductsPage() {
         </div>
       </form>
       <div className="resource-list">
-        <div className="resource-list-header"><div><strong>Produtos por categoria</strong><span>{products.length} produtos ativos</span></div></div>
+        <div className="resource-list-header">
+          <div><strong>{showAll ? 'Todos os produtos' : 'Produtos ativos'}</strong><span>{visibleProducts.length} registros</span></div>
+          <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)} disabled={!showAll && inactiveCount === 0}>
+            {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
+            {showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}
+          </button>
+        </div>
         {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : productsByCategory.length === 0 ? <div className="resource-state">Nenhum produto cadastrado ainda.</div> : productsByCategory.map(({ category, products: categoryProducts }) => (
           <div className="product-category-group" key={category.id}>
             <div className="product-category-heading"><h3>{category.name}</h3><span>{categoryProducts.length} {categoryProducts.length === 1 ? 'item' : 'itens'}</span></div>
-            {categoryProducts.map((product) => <article className="resource-row" key={product.id}><div><strong>{product.name}</strong><span>{product.description || 'Sem descrição'}</span></div><b className="product-price">R$ {Number(product.price).toFixed(2).replace('.', ',')}</b></article>)}
+            {categoryProducts.map((product) => <article className="resource-row" key={product.id}><div><strong>{product.name}</strong><span className={product.active ? '' : 'status-inactive'}>{product.description || (product.active ? 'Sem descrição' : 'Inativo')}</span></div><b className="product-price">R$ {Number(product.price).toFixed(2).replace('.', ',')}</b><button className={product.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(product)} disabled={updatingId === product.id} aria-label={`${product.active ? 'Desativar' : 'Ativar'} ${product.name}`}>{updatingId === product.id ? <LoaderCircle className="spin" size={16} /> : product.active ? <CircleOff size={16} /> : <Check size={16} />}</button></article>)}
           </div>
         ))}
       </div>

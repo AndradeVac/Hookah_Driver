@@ -65,7 +65,7 @@ class ProductService:
         data: ProductUpdate,
     ) -> Product:
 
-        product = self.repository.get_by_id(product_id)
+        product = self.repository.get_by_id_any_status(product_id)
 
         if product is None:
             raise NotFoundError("Produto não encontrado.")
