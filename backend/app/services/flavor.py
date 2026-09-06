@@ -1,0 +1,88 @@
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from app.models.flavor import Flavor
+from app.repositories.brand import BrandRepository
+from app.repositories.flavor import FlavorRepository
+from app.schemas.flavor import FlavorCreate, FlavorUpdate
+
+
+class FlavorService:
+
+    def __init__(self, db: Session):
+        self.repository = FlavorRepository(db)
+        self.brand_repository = BrandRepository(db)
+        self.db = db
+
+    def create(self, data: FlavorCreate) -> Flavor:
+        brand = self.brand_repository.get_by_id(data.brand_id)
+
+        if brand is None:
+            raise ValueError("Marca não encontrada.")
+
+        flavor = Flavor(
+            brand_id=data.brand_id,
+            name=data.name,
+            description=data.description,
+        )
+
+        self.repository.create(flavor)
+        self.db.commit()
+
+        return flavor
+
+    def get_by_id(self, flavor_id: UUID) -> Flavor:
+        flavor = self.repository.get_by_id(flavor_id)
+
+        if flavor is None:
+            raise ValueError("Sabor não encontrado.")
+
+        return flavor
+
+    def get_all(self) -> list[Flavor]:
+        return self.repository.get_all()
+
+    def update(
+        self,
+        flavor_id: UUID,
+        data: FlavorUpdate,
+    ) -> Flavor:
+
+        flavor = self.repository.get_by_id(flavor_id)
+
+        if flavor is None:
+            raise ValueError("Sabor não encontrado.")
+
+        if data.brand_id is not None:
+            brand = self.brand_repository.get_by_id(data.brand_id)
+
+            if brand is None:
+                raise ValueError("Marca não encontrada.")
+
+            flavor.brand_id = data.brand_id
+
+        if data.name is not None:
+            flavor.name = data.name
+
+        if data.description is not None:
+            flavor.description = data.description
+
+        if data.active is not None:
+            flavor.active = data.active
+
+        self.repository.update(flavor)
+        self.db.commit()
+
+        return flavor
+
+    def delete(self, flavor_id: UUID) -> Flavor:
+        flavor = self.repository.get_by_id(flavor_id)
+
+        if flavor is None:
+            raise ValueError("Sabor não encontrado.")
+
+        self.repository.delete(flavor)
+        self.db.commit()
+
+        return flavor

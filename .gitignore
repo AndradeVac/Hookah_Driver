@@ -1,0 +1,10 @@
+# Local configuration
+.env
+
+# Python generated files
+__pycache__/
+*.py[cod]
+
+# Frontend dependencies and builds
+node_modules/
+dist/
