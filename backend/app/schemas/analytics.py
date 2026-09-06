@@ -9,6 +9,13 @@ class ProductSalesSummary(BaseModel):
     revenue: Decimal
 
 
+class EssenceSalesSummary(BaseModel):
+    brand_name: str
+    flavor_name: str
+    quantity: int
+    revenue: Decimal
+
+
 class HourSalesSummary(BaseModel):
     hour: int
     orders: int
@@ -29,6 +36,7 @@ class DashboardAnalyticsResponse(BaseModel):
     average_ticket: Decimal
     top_product: ProductSalesSummary | None
     products: list[ProductSalesSummary]
+    essences: list[EssenceSalesSummary]
     sales_by_hour: list[HourSalesSummary]
     orders_by_status: list[BreakdownSummary]
     orders_by_payment: list[BreakdownSummary]

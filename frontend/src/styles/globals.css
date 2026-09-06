@@ -506,6 +506,10 @@ button { cursor: pointer; }
   background: linear-gradient(90deg, var(--tech-blue), #9aebff);
 }
 
+.breakdown-row b.essence-bar {
+  background: linear-gradient(90deg, #d99bff, #a78bfa);
+}
+
 .bars {
   display: flex;
   align-items: end;

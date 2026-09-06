@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowUpRight, BarChart3, ChartColumnBig, CreditCard, LoaderCircle, ShoppingCart, Users } from 'lucide-react'
+import { AlertCircle, ArrowUpRight, BarChart3, ChartColumnBig, CreditCard, Flame, LoaderCircle, ShoppingCart, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { downloadDashboardExport, getDashboardAnalytics, type AnalyticsPeriod, type DashboardAnalytics } from '../../services/analytics'
 
@@ -42,6 +42,7 @@ export function DashboardOverviewPage() {
   const maxHourlyOrders = Math.max(...(analytics?.sales_by_hour.map((item) => item.orders) ?? [1]), 1)
   const maxStatusCount = Math.max(...(analytics?.orders_by_status.map((item) => item.count) ?? [1]), 1)
   const maxPaymentCount = Math.max(...(analytics?.orders_by_payment.map((item) => item.count) ?? [1]), 1)
+  const maxEssenceCount = Math.max(...(analytics?.essences.map((item) => item.quantity) ?? [1]), 1)
 
   return (
     <section className="page-content dashboard-tech-shell">
@@ -55,6 +56,7 @@ export function DashboardOverviewPage() {
       <div className="analytics-grid dashboard-breakdowns">
         <article className="breakdown-card"><div className="chart-heading"><div><h3>Status dos pedidos</h3><span>Distribuição operacional</span></div><ArrowUpRight size={17} /></div><div className="breakdown-list">{analytics?.orders_by_status.map((item) => <div className="breakdown-row" key={item.label}><div><span>{statusLabels[item.label] ?? item.label}</span><strong>{item.count}</strong></div><i><b style={{ width: `${(item.count / maxStatusCount) * 100}%` }} /></i></div>)}</div></article>
         <article className="breakdown-card"><div className="chart-heading"><div><h3>Meios de pagamento</h3><span>Pedidos por modalidade</span></div><CreditCard size={17} /></div><div className="breakdown-list">{analytics?.orders_by_payment.map((item) => <div className="breakdown-row" key={item.label}><div><span>{paymentLabels[item.label] ?? item.label}</span><strong>{item.count}</strong></div><i><b className="payment-bar" style={{ width: `${(item.count / maxPaymentCount) * 100}%` }} /></i></div>)}</div></article>
+        <article className="breakdown-card"><div className="chart-heading"><div><h3>Essências mais vendidas</h3><span>Marca e sabor</span></div><Flame size={17} /></div><div className="breakdown-list">{analytics?.essences.slice(0, 5).map((item) => <div className="breakdown-row" key={`${item.brand_name}-${item.flavor_name}`}><div><span>{item.brand_name} · {item.flavor_name}</span><strong>{item.quantity} un.</strong></div><i><b className="essence-bar" style={{ width: `${(item.quantity / maxEssenceCount) * 100}%` }} /></i></div>)}</div></article>
       </div>
       <div className="insight-banner"><ArrowUpRight size={16} /><div><strong>Dados para decidir melhor.</strong><p>Indicadores calculados no backend para manter o painel leve mesmo com alto volume.</p></div></div>
     </section>

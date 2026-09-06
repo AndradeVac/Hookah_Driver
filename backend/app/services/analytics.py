@@ -9,12 +9,16 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.order import Order, OrderStatus
+from app.models.brand import Brand
+from app.models.flavor import Flavor
 from app.models.order_item import OrderItem
+from app.models.product import Product
 from app.schemas.analytics import (
     BreakdownSummary,
     DashboardAnalyticsResponse,
     HourSalesSummary,
     ProductSalesSummary,
+    EssenceSalesSummary,
 )
 
 
@@ -75,6 +79,23 @@ class AnalyticsService:
             .limit(10)
         ).all()
 
+        essence_rows = self.db.execute(
+            select(
+                Brand.name.label("brand_name"),
+                Flavor.name.label("flavor_name"),
+                func.sum(OrderItem.quantity).label("quantity"),
+                func.sum(OrderItem.total_price).label("revenue"),
+            )
+            .join(Order, Order.id == OrderItem.order_id)
+            .join(Product, Product.id == OrderItem.product_id)
+            .join(Flavor, Flavor.id == Product.flavor_id)
+            .join(Brand, Brand.id == Flavor.brand_id)
+            .where(*conditions)
+            .group_by(Brand.name, Flavor.name)
+            .order_by(func.sum(OrderItem.quantity).desc())
+            .limit(10)
+        ).all()
+
         hourly_rows = self.db.execute(
             select(
                 func.extract("hour", Order.created_at).label("hour"),
@@ -101,6 +122,7 @@ class AnalyticsService:
         ).all()
 
         products = [ProductSalesSummary(product_name=row.product_name, quantity=int(row.quantity), revenue=Decimal(row.revenue)) for row in product_rows]
+        essences = [EssenceSalesSummary(brand_name=row.brand_name, flavor_name=row.flavor_name, quantity=int(row.quantity), revenue=Decimal(row.revenue)) for row in essence_rows]
         sales_by_hour = [HourSalesSummary(hour=int(row.hour), orders=int(row.orders), revenue=Decimal(row.revenue)) for row in hourly_rows]
 
         return DashboardAnalyticsResponse(
@@ -112,6 +134,7 @@ class AnalyticsService:
             average_ticket=Decimal(average_ticket),
             top_product=products[0] if products else None,
             products=products,
+            essences=essences,
             sales_by_hour=sales_by_hour,
             orders_by_status=[BreakdownSummary(label=row[0].value, count=int(row[1])) for row in status_rows],
             orders_by_payment=[BreakdownSummary(label=row[0].value, count=int(row[1])) for row in payment_rows],
