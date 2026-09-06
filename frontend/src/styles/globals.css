@@ -1809,3 +1809,52 @@ button { cursor: pointer; }
     display: none;
   }
 }
+
+/* Customer journey controls */
+.customer-categories button,
+.payment-choice button {
+  min-height: 42px;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.customer-categories button:hover,
+.payment-choice button:hover {
+  border-color: rgba(243, 200, 106, .5);
+  transform: translateY(-1px);
+}
+
+.customer-product-card {
+  transition: transform .18s ease, border-color .18s ease;
+}
+
+.customer-product-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(243, 200, 106, .35);
+}
+
+.customer-product-card button,
+.customer-primary {
+  min-height: 44px;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+.customer-product-card button:hover,
+.customer-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(243, 200, 106, .2);
+  filter: brightness(1.04);
+}
+
+.customer-primary:disabled {
+  cursor: not-allowed;
+}
+
+.customer-cart-button {
+  z-index: 10;
+  min-height: 54px;
+}
+
+.customer-cart-row button {
+  min-width: 34px;
+  min-height: 34px;
+}
