@@ -9,6 +9,16 @@ export type Order = {
   payment_method: 'PIX' | 'CARD' | 'CASH'
   subtotal: string
   total: string
+  created_at: string
+  updated_at: string
+  items: Array<{
+    product_id: string
+    product_name: string
+    quantity: number
+    unit_price: string
+    total_price: string
+    notes: string | null
+  }>
 }
 
 export async function getOrders() {
