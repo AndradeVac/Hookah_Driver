@@ -864,9 +864,11 @@ button { cursor: pointer; }
 
 .resource-row span {
   margin-top: 4px;
-  color: var(--success);
   font-size: 10px;
 }
+
+.resource-row .status-active { color: var(--success); }
+.resource-row .status-inactive { color: var(--text-muted); }
 
 .icon-danger {
   display: grid;
@@ -879,6 +881,21 @@ button { cursor: pointer; }
 }
 
 .icon-danger:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.icon-success {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(95, 225, 157, 0.24);
+  border-radius: 8px;
+  padding: 7px;
+  background: transparent;
+  color: var(--success);
+}
+
+.icon-success:disabled {
   cursor: wait;
   opacity: 0.6;
 }

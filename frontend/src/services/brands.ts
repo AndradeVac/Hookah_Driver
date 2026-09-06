@@ -22,3 +22,8 @@ export async function deleteBrand(id: string) {
   const { data } = await api.delete<Brand>(`/brands/${id}`)
   return data
 }
+
+export async function updateBrandStatus(id: string, active: boolean) {
+  const { data } = await api.patch<Brand>(`/brands/${id}`, { active })
+  return data
+}

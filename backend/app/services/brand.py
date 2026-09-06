@@ -50,7 +50,7 @@ class BrandService:
         data: BrandUpdate,
     ) -> Brand:
 
-        brand = self.repository.get_by_id(brand_id)
+        brand = self.repository.get_by_id_any_status(brand_id)
 
         if brand is None:
             raise NotFoundError(

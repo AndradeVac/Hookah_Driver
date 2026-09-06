@@ -25,6 +25,9 @@ class FakeBrandRepository:
             return self.brand
         return None
 
+    def get_by_id_any_status(self, brand_id):
+        return self.get_by_id(brand_id)
+
     def get_by_name(self, name):
         if self.brand is not None and self.brand.name == name:
             return self.brand

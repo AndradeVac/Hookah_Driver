@@ -26,17 +26,18 @@ class BrandRepository:
 
         return self.db.scalar(statement)
 
+    def get_by_id_any_status(self, brand_id: UUID) -> Brand | None:
+        statement = select(Brand).where(Brand.id == brand_id)
+
+        return self.db.scalar(statement)
+
     def get_by_name(self, name: str) -> Brand | None:
         statement = select(Brand).where(Brand.name == name)
 
         return self.db.scalar(statement)
 
     def get_all(self) -> list[Brand]:
-        statement = (
-            select(Brand)
-            .where(Brand.active.is_(True))
-            .order_by(Brand.name)
-        )
+        statement = select(Brand).order_by(Brand.name)
 
         return list(self.db.scalars(statement).all())
 

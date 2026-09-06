@@ -1,13 +1,13 @@
-import { AlertCircle, LoaderCircle, Plus, Trash2 } from 'lucide-react'
+import { AlertCircle, Check, CircleOff, LoaderCircle, Plus } from 'lucide-react'
 import { FormEvent, useEffect, useState } from 'react'
-import { createBrand, deleteBrand, getBrands, type Brand } from '../../services/brands'
+import { createBrand, getBrands, updateBrandStatus, type Brand } from '../../services/brands'
 
 export function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   async function loadBrands() {
@@ -43,18 +43,16 @@ export function BrandsPage() {
     }
   }
 
-  async function handleDelete(brand: Brand) {
-    if (!window.confirm(`Remover a marca ${brand.name}?`)) return
-
-    setDeletingId(brand.id)
+  async function handleStatusChange(brand: Brand) {
+    setUpdatingId(brand.id)
     setError('')
     try {
-      await deleteBrand(brand.id)
-      setBrands((current) => current.filter((item) => item.id !== brand.id))
+      const updatedBrand = await updateBrandStatus(brand.id, !brand.active)
+      setBrands((current) => current.map((item) => item.id === brand.id ? updatedBrand : item))
     } catch {
-      setError('Não foi possível remover a marca.')
+      setError('Não foi possível atualizar o status da marca.')
     } finally {
-      setDeletingId(null)
+      setUpdatingId(null)
     }
   }
 
@@ -90,9 +88,9 @@ export function BrandsPage() {
         ) : (
           brands.map((brand) => (
             <article className="resource-row" key={brand.id}>
-              <div><strong>{brand.name}</strong><span>{brand.active ? 'Ativa' : 'Inativa'}</span></div>
-              <button className="icon-danger" type="button" onClick={() => void handleDelete(brand)} disabled={deletingId === brand.id} aria-label={`Remover ${brand.name}`}>
-                {deletingId === brand.id ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}
+              <div><strong>{brand.name}</strong><span className={brand.active ? 'status-active' : 'status-inactive'}>{brand.active ? 'Ativa' : 'Inativa'}</span></div>
+              <button className={brand.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(brand)} disabled={updatingId === brand.id} aria-label={`${brand.active ? 'Desativar' : 'Ativar'} ${brand.name}`}>
+                {updatingId === brand.id ? <LoaderCircle className="spin" size={16} /> : brand.active ? <CircleOff size={16} /> : <Check size={16} />}
               </button>
             </article>
           ))
