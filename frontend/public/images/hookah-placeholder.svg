@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Hookah Driver placeholder</title>
+  <desc id="desc">Placeholder illustration for hookah app branding and menu imagery.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7dd3fc"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <circle cx="940" cy="150" r="180" fill="#1d4ed8" opacity="0.18"/>
+  <circle cx="230" cy="620" r="220" fill="#a855f7" opacity="0.14"/>
+  <rect x="240" y="120" width="720" height="520" rx="32" fill="#0f172a" stroke="url(#glow)" stroke-width="3"/>
+  <path d="M430 520C430 420 510 350 600 350C690 350 770 420 770 520V560H430V520Z" fill="#111827" stroke="#7dd3fc" stroke-width="3"/>
+  <rect x="500" y="220" width="200" height="120" rx="18" fill="#0b1220" stroke="#a78bfa" stroke-width="3"/>
+  <rect x="535" y="160" width="130" height="70" rx="14" fill="#7dd3fc" opacity="0.9"/>
+  <path d="M510 280L470 520" stroke="#e2e8f0" stroke-width="9" stroke-linecap="round"/>
+  <path d="M690 280L730 520" stroke="#e2e8f0" stroke-width="9" stroke-linecap="round"/>
+  <path d="M550 520H650" stroke="#7dd3fc" stroke-width="10" stroke-linecap="round"/>
+  <path d="M600 350V220" stroke="#c084fc" stroke-width="10" stroke-linecap="round"/>
+  <text x="600" y="640" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="700" fill="#e2e8f0">HOOKAH DRIVER</text>
+  <text x="600" y="700" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" fill="#94a3b8">Cardápio / pedido / status</text>
+</svg>
