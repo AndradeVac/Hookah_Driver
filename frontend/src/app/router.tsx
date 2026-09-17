@@ -17,6 +17,7 @@ const NewOrderPage = lazy(() => import('../features/orders/NewOrderPage').then((
 const OrdersPage = lazy(() => import('../features/orders/OrdersPage').then((module) => ({ default: module.OrdersPage })))
 const CustomerQrScannerPage = lazy(() => import('../features/customer/CustomerQrScannerPage').then((module) => ({ default: module.CustomerQrScannerPage })))
 const CustomerJourneyPage = lazy(() => import('../features/customer/CustomerJourneyPage').then((module) => ({ default: module.CustomerJourneyPage })))
+const OrdersTrackingPage = lazy(() => import('../features/lounge/OrdersTrackingPage').then((module) => ({ default: module.OrdersTrackingPage })))
 
 function RouteLoading() {
   return <div className="auth-loading"><div className="loading-mark">H</div><span>Carregando seu espaço...</span></div>
@@ -33,6 +34,7 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/orders/tracking" element={<OrdersTrackingPage />} />
             <Route path="/orders/new" element={<NewOrderPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
