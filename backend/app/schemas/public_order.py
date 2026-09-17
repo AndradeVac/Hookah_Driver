@@ -27,6 +27,7 @@ class PublicOrderResponse(BaseModel):
     payment_status: str
     checkout_url: str | None = None
     preference_id: str | None = None
+    mercado_pago_public_key: str | None = None
     pix_qr_code: str | None = None
     pix_qr_code_base64: str | None = None
 

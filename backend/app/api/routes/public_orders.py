@@ -5,6 +5,7 @@ import asyncio
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.models.customer import Customer
 from app.models.order import Order, OrderStatus, PaymentMethod
@@ -61,6 +62,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
 
     checkout_url = None
     preference_id = None
+    mercado_pago_public_key = None
     pix_qr_code = None
     pix_qr_code_base64 = None
 
@@ -93,6 +95,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
             db.commit()
             checkout_url = checkout.get("checkout_url")
             preference_id = checkout.get("preference_id")
+            mercado_pago_public_key = settings.mercado_pago_public_key or None
         except Exception as e:
             print(f"Erro ao criar checkout: {e}")
             import traceback
@@ -108,6 +111,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
         payment_status=order.payment_status.value,
         checkout_url=checkout_url,
         preference_id=preference_id,
+        mercado_pago_public_key=mercado_pago_public_key,
         pix_qr_code=pix_qr_code,
         pix_qr_code_base64=pix_qr_code_base64,
     )
