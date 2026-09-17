@@ -19,8 +19,9 @@ def cleanup_brands(
         # Delete in cascade order
         db.execute(text("""
             DELETE FROM order_items
-            WHERE flavor_id IN (
-                SELECT f.id FROM flavors f
+            WHERE product_id IN (
+                SELECT p.id FROM products p
+                JOIN flavors f ON p.flavor_id = f.id
                 JOIN brands b ON f.brand_id = b.id
                 WHERE b.name NOT IN ('Ziggy', 'Zomo', 'Adalya')
             )
