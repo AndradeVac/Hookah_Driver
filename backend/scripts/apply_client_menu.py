@@ -15,6 +15,8 @@ def get_category(name: str) -> Category:
         category = Category(name=name, active=True)
         db.add(category)
         db.flush()
+    else:
+        category.active = True
     return category
 
 
