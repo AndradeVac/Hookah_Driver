@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     func,
     text,
@@ -113,6 +114,21 @@ class Order(Base):
 
     mercado_pago_order_id: Mapped[str | None] = mapped_column(
         String,
+        nullable=True,
+    )
+
+    mercado_pago_payment_id: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
+
+    pix_qr_code: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    pix_qr_code_base64: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
 

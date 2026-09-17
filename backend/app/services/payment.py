@@ -56,6 +56,41 @@ class PaymentService:
             "status": data.get("status"),
         }
 
+    def create_pix_payment(self, *, order_id: str, description: str, amount: Decimal, payer_email: str) -> dict:
+        if not settings.mercado_pago_access_token:
+            raise RuntimeError(
+                "MERCADO_PAGO_ACCESS_TOKEN não configurado. Defina o token antes de habilitar pagamentos reais."
+            )
+
+        payload = {
+            "transaction_amount": float(amount),
+            "description": description,
+            "payment_method_id": "pix",
+            "external_reference": order_id,
+            "payer": {"email": payer_email},
+        }
+
+        response = httpx.post(
+            f"{settings.mercado_pago_api_base_url.rstrip('/')}/v1/payments",
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {settings.mercado_pago_access_token}",
+                "Content-Type": "application/json",
+                "X-Idempotency-Key": str(uuid.uuid4()),
+            },
+            timeout=20,
+        )
+        response.raise_for_status() if hasattr(response, "raise_for_status") else None
+        data = response.json()
+        transaction_data = ((data.get("point_of_interaction") or {}).get("transaction_data")) or {}
+        return {
+            "payment_id": data.get("id"),
+            "status": data.get("status"),
+            "qr_code": transaction_data.get("qr_code"),
+            "qr_code_base64": transaction_data.get("qr_code_base64"),
+            "ticket_url": transaction_data.get("ticket_url"),
+        }
+
     def verify_webhook_signature(self, *, data_id: str, request_id: str | None, x_signature: str | None) -> bool:
         if not settings.mercado_pago_webhook_secret:
             return False

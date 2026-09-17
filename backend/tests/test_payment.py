@@ -47,6 +47,58 @@ def test_create_order_uses_mercado_pago_orders_api_and_returns_checkout_url(monk
     assert captured["json"]["config"]["online"]["success_url"].startswith("https://app.hookahdriver.com")
 
 
+def test_create_pix_payment_returns_qr_code(monkeypatch):
+    captured = {}
+
+    def fake_post(url, json, headers, timeout):
+        captured["url"] = url
+        captured["json"] = json
+        captured["headers"] = headers
+        return DummyResponse({
+            "id": 123456789,
+            "status": "pending",
+            "point_of_interaction": {
+                "transaction_data": {
+                    "qr_code": "00020126...copia-e-cola",
+                    "qr_code_base64": "iVBORw0KGgoAAAANSUhEUgAA",
+                    "ticket_url": "https://mercadopago.com/pix/ticket",
+                },
+            },
+        })
+
+    monkeypatch.setattr("app.services.payment.httpx.post", fake_post)
+    monkeypatch.setattr("app.services.payment.settings.mercado_pago_access_token", "TEST_TOKEN")
+    monkeypatch.setattr("app.services.payment.settings.mercado_pago_api_base_url", "https://api.mercadopago.com")
+
+    service = PaymentService()
+    result = service.create_pix_payment(
+        order_id="ord_123",
+        description="Pedido Hookah Driver",
+        amount=Decimal("40.00"),
+        payer_email="cliente11999998888@hookahdriver.com",
+    )
+
+    assert result["payment_id"] == 123456789
+    assert result["status"] == "pending"
+    assert result["qr_code"] == "00020126...copia-e-cola"
+    assert result["qr_code_base64"] == "iVBORw0KGgoAAAANSUhEUgAA"
+    assert captured["url"] == "https://api.mercadopago.com/v1/payments"
+    assert captured["json"]["payment_method_id"] == "pix"
+    assert captured["json"]["external_reference"] == "ord_123"
+    assert captured["json"]["payer"]["email"] == "cliente11999998888@hookahdriver.com"
+
+
+def test_create_pix_payment_rejects_missing_access_token(monkeypatch):
+    monkeypatch.setattr("app.services.payment.settings.mercado_pago_access_token", "")
+
+    service = PaymentService()
+    try:
+        service.create_pix_payment(order_id="ord_123", description="Pedido", amount=Decimal("10.00"), payer_email="a@b.com")
+        assert False, "expected RuntimeError"
+    except RuntimeError as exc:
+        assert "MERCADO_PAGO_ACCESS_TOKEN" in str(exc)
+
+
 def test_create_order_rejects_missing_access_token(monkeypatch):
     monkeypatch.setattr("app.services.payment.settings.mercado_pago_access_token", "")
 

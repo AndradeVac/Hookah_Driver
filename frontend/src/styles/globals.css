@@ -1929,6 +1929,38 @@ button { cursor: pointer; }
   }
 }
 
+.customer-pix-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 22px;
+  border: 1px solid rgba(243, 200, 106, 0.3);
+  border-radius: 14px;
+  background: rgba(243, 200, 106, 0.06);
+}
+
+.customer-pix-box > span:first-child {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.pix-qr-image {
+  width: 200px;
+  height: 200px;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
+}
+
+.customer-pix-box small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+
 /* Customer journey controls */
 .customer-categories button,
 .payment-choice button {

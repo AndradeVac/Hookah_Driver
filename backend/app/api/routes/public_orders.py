@@ -34,7 +34,7 @@ async def public_order_socket(websocket: WebSocket, public_token: UUID, db: Sess
                 await websocket.send_json({"error": "Pedido não encontrado"})
                 break
             if order.status.value != last_status:
-                await websocket.send_json({"order_number": order.order_number, "status": order.status.value, "total": str(order.total)})
+                await websocket.send_json({"order_number": order.order_number, "status": order.status.value, "total": str(order.total), "payment_status": order.payment_status.value})
                 last_status = order.status.value
             if order.status.value in {"FINISHED", "CANCELLED"}:
                 break
@@ -60,7 +60,27 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
     ))
 
     checkout_url = None
-    if data.payment_method in (PaymentMethod.PIX, PaymentMethod.CARD):
+    pix_qr_code = None
+    pix_qr_code_base64 = None
+
+    if data.payment_method is PaymentMethod.PIX:
+        try:
+            phone_digits = ''.join(filter(str.isdigit, data.customer_phone))
+            pix = PaymentService().create_pix_payment(
+                order_id=str(order.id),
+                description=f"Pedido #{order.order_number} - Hookah Driver",
+                amount=order.total,
+                payer_email=f"cliente{phone_digits}@hookahdriver.com",
+            )
+            order.mercado_pago_payment_id = pix.get("payment_id")
+            order.pix_qr_code = pix.get("qr_code")
+            order.pix_qr_code_base64 = pix.get("qr_code_base64")
+            db.commit()
+            pix_qr_code = pix.get("qr_code")
+            pix_qr_code_base64 = pix.get("qr_code_base64")
+        except Exception:
+            db.rollback()
+    elif data.payment_method is PaymentMethod.CARD:
         try:
             checkout = PaymentService().create_order(
                 order_id=str(order.id),
@@ -82,6 +102,8 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
         public_token=order.public_token,
         payment_status=order.payment_status.value,
         checkout_url=checkout_url,
+        pix_qr_code=pix_qr_code,
+        pix_qr_code_base64=pix_qr_code_base64,
     )
 
 
@@ -91,7 +113,7 @@ def track_public_order(public_token: UUID, db: Session = Depends(get_db)):
     order = db.query(Order).filter_by(public_token=public_token).first()
     if order is None:
         raise HTTPException(status_code=404, detail="Pedido não encontrado.")
-    return PublicOrderTracking(order_number=order.order_number, status=order.status.value, total=str(order.total), created_at=order.created_at.isoformat(), payment_status=order.payment_status.value)
+    return PublicOrderTracking(order_number=order.order_number, status=order.status.value, total=str(order.total), created_at=order.created_at.isoformat(), payment_status=order.payment_status.value, pix_qr_code=order.pix_qr_code, pix_qr_code_base64=order.pix_qr_code_base64)
 
 
 @router.get("/history", response_model=list[PublicHistoryOrder])
