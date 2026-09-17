@@ -27,11 +27,14 @@ def create_payment_checkout(
 async def mercado_pago_webhook(
     request: Request,
     x_signature: str | None = Header(default=None, alias="x-signature"),
+    x_request_id: str | None = Header(default=None, alias="x-request-id"),
 ):
     payload = await request.body()
+    data_id = request.query_params.get("data.id") or request.query_params.get("id") or ""
     if not PaymentService().verify_webhook_signature(
-        payload=payload,
-        signature=x_signature,
+        data_id=data_id,
+        request_id=x_request_id,
+        x_signature=x_signature,
     ):
         raise HTTPException(status_code=401, detail="assinatura inválida")
 

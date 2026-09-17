@@ -54,20 +54,31 @@ class PaymentService:
             "status": data.get("status"),
         }
 
-    def verify_webhook_signature(self, *, payload: bytes, signature: str | None) -> bool:
+    def verify_webhook_signature(self, *, data_id: str, request_id: str | None, x_signature: str | None) -> bool:
         if not settings.mercado_pago_webhook_secret:
             return False
-        if not signature:
+        if not x_signature:
             return False
 
-        expected = signature.replace("sha256=", "", 1).strip()
+        parts = dict(
+            item.split("=", 1)
+            for item in x_signature.split(",")
+            if "=" in item
+        )
+        ts = parts.get("ts")
+        received_hash = parts.get("v1")
+        if not ts or not received_hash:
+            return False
+
         import hashlib
         import hmac
 
+        manifest = f"id:{data_id};request-id:{request_id or ''};ts:{ts};"
         digest = hmac.new(
             settings.mercado_pago_webhook_secret.encode("utf-8"),
-            payload,
+            manifest.encode("utf-8"),
             hashlib.sha256,
         ).hexdigest()
-        return hmac.compare_digest(digest, expected)
+        return hmac.compare_digest(digest, received_hash)
+
 

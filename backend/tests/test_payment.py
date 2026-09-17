@@ -56,3 +56,44 @@ def test_create_order_rejects_missing_access_token(monkeypatch):
         assert False, "expected RuntimeError"
     except RuntimeError as exc:
         assert "MERCADO_PAGO_ACCESS_TOKEN" in str(exc)
+
+
+def test_verify_webhook_signature_accepts_valid_hmac(monkeypatch):
+    import hashlib
+    import hmac
+
+    monkeypatch.setattr("app.services.payment.settings.mercado_pago_webhook_secret", "my-secret")
+
+    ts = "1704908010"
+    manifest = "id:123456;request-id:req-abc;ts:1704908010;"
+    digest = hmac.new("my-secret".encode("utf-8"), manifest.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    service = PaymentService()
+    assert service.verify_webhook_signature(
+        data_id="123456",
+        request_id="req-abc",
+        x_signature=f"ts={ts},v1={digest}",
+    ) is True
+
+
+def test_verify_webhook_signature_rejects_tampered_signature(monkeypatch):
+    monkeypatch.setattr("app.services.payment.settings.mercado_pago_webhook_secret", "my-secret")
+
+    service = PaymentService()
+    assert service.verify_webhook_signature(
+        data_id="123456",
+        request_id="req-abc",
+        x_signature="ts=1704908010,v1=deadbeef",
+    ) is False
+
+
+def test_verify_webhook_signature_rejects_without_secret_configured(monkeypatch):
+    monkeypatch.setattr("app.services.payment.settings.mercado_pago_webhook_secret", "")
+
+    service = PaymentService()
+    assert service.verify_webhook_signature(
+        data_id="123456",
+        request_id="req-abc",
+        x_signature="ts=1704908010,v1=deadbeef",
+    ) is False
+

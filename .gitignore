@@ -1,5 +1,7 @@
 # Local configuration
 .env
+.env.development
+.env.production
 
 # Python generated files
 __pycache__/
