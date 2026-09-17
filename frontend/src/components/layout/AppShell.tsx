@@ -42,11 +42,7 @@ export function AppShell() {
     <div className="app-shell app-shell-dark">
       <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
         <div className="brand-lockup">
-          <div className="brand-mark">H</div>
-          <div>
-            <strong>Hookah</strong>
-            <span>Driver · Gestão</span>
-          </div>
+          <img className="brand-logo" src="/images/logo.jpeg" alt="Hookah Drive" />
           <button className="icon-button mobile-close" onClick={() => setOpen(false)} aria-label="Fechar menu">
             <X size={18} />
           </button>

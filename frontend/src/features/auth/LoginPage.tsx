@@ -39,7 +39,7 @@ export function LoginPage() {
       </section>
       <section className="login-panel">
         <div className="login-form-wrap">
-          <div className="login-brand"><div className="brand-mark">H</div><span>Hookah Driver</span></div>
+          <div className="login-brand"><img className="login-brand-logo" src="/images/logo.jpeg" alt="Hookah Drive" /></div>
           <div className="login-heading"><span className="eyebrow">Acesso administrativo</span><h2>Bem-vindo de volta.</h2><p>Entre para acompanhar sua operação.</p></div>
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <label className="form-field"><span>E-mail</span><input type="email" placeholder="voce@lounge.com" autoComplete="email" {...register('username')} />{errors.username && <small className="field-error">{errors.username.message}</small>}</label>
