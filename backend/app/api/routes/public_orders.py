@@ -93,7 +93,10 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
             db.commit()
             checkout_url = checkout.get("checkout_url")
             preference_id = checkout.get("preference_id")
-        except Exception:
+        except Exception as e:
+            print(f"Erro ao criar checkout: {e}")
+            import traceback
+            traceback.print_exc()
             db.rollback()
 
     return PublicOrderResponse(
