@@ -31,6 +31,7 @@ class PaymentService:
                 "failure": return_url,
                 "pending": return_url,
             },
+            "auto_return": "approved",
             "notification_url": notification_url,
         }
 
