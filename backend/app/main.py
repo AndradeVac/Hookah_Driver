@@ -9,7 +9,6 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.analytics import router as analytics_router
 from app.api.routes.audit import router as audit_router
 from app.api.routes.admin_orders import router as admin_orders_router
-from app.api.routes.seed import router as seed_router
 from app.api.routes.orders import router as orders_router
 from app.api.routes.payments import router as payments_router
 from app.api.routes.public_orders import router as public_orders_router
@@ -47,7 +46,6 @@ app.include_router(auth_router)
 app.include_router(analytics_router)
 app.include_router(audit_router)
 app.include_router(admin_orders_router)
-app.include_router(seed_router)
 app.include_router(brands_router)
 app.include_router(categories_router)
 app.include_router(customers_router)
