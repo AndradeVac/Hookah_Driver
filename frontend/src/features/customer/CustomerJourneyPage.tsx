@@ -4,6 +4,7 @@ import { getBrands, type Brand } from '../../services/brands'
 import { getCategories, type Category } from '../../services/categories'
 import { getFlavors, type Flavor } from '../../services/flavors'
 import { getProducts, type Product } from '../../services/products'
+import { getWebSocketUrl } from '../../services/api'
 import { createPublicOrder, getPublicOrder, getPublicOrderHistory, type PublicHistoryOrder, type PublicOrderResponse } from '../../services/publicOrders'
 import { useSearchParams } from 'react-router-dom'
 
@@ -53,8 +54,7 @@ export function CustomerJourneyPage() {
 
   useEffect(() => {
     if (step !== 'success' || !order?.public_token) return
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const socket = new WebSocket(`${protocol}://${window.location.host}/api/public/ws/orders/${order.public_token}`)
+    const socket = new WebSocket(getWebSocketUrl(`/public/ws/orders/${order.public_token}`))
     socket.onmessage = (event) => {
       const update = JSON.parse(event.data) as { status?: string; total?: string }
       if (!update.status) return

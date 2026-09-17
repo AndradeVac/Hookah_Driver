@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     mercado_pago_public_key: str = ""
     mercado_pago_webhook_secret: str = ""
     mercado_pago_api_base_url: str = "https://api.mercadopago.com"
+    mercado_pago_client_id: str = ""
+    mercado_pago_client_secret: str = ""
 
     model_config = SettingsConfigDict(
         env_file=_env_file,
