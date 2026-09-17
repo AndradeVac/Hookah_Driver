@@ -17,6 +17,7 @@ from app.schemas.order import OrderCreate, OrderStatusUpdate
 
 class OrderService:
     allowed_transitions = {
+        OrderStatus.AWAITING_PAYMENT: {OrderStatus.RECEIVED, OrderStatus.CANCELLED},
         OrderStatus.RECEIVED: {OrderStatus.PREPARING, OrderStatus.CANCELLED},
         OrderStatus.PREPARING: {OrderStatus.READY, OrderStatus.CANCELLED},
         OrderStatus.READY: {OrderStatus.FINISHED, OrderStatus.CANCELLED},
@@ -30,7 +31,7 @@ class OrderService:
         self.product_repository = ProductRepository(db)
         self.db = db
 
-    def create(self, data: OrderCreate) -> Order:
+    def create(self, data: OrderCreate, initial_status: OrderStatus = OrderStatus.RECEIVED) -> Order:
         customer = self.customer_repository.get_by_id(data.customer_id)
         if customer is None or not getattr(customer, "active", True):
             raise NotFoundError("Cliente não encontrado.")
@@ -39,10 +40,11 @@ class OrderService:
         order = Order(
             customer_id=customer.id,
             payment_method=data.payment_method,
-            status=OrderStatus.RECEIVED,
+            status=initial_status,
             subtotal=Decimal("0.00"),
             total=Decimal("0.00"),
         )
+
 
         for item_data in data.items:
             product = self.product_repository.get_by_id(item_data.product_id)
@@ -70,7 +72,7 @@ class OrderService:
         order.subtotal = subtotal
         order.total = subtotal
         order.status_history.append(
-            OrderStatusHistory(status=OrderStatus.RECEIVED)
+            OrderStatusHistory(status=initial_status)
         )
 
         try:

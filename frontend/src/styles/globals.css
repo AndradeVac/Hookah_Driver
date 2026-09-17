@@ -799,7 +799,7 @@ button { cursor: pointer; }
 
 .orders-columns {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 18px;
 }
 
@@ -1064,6 +1064,42 @@ button { cursor: pointer; }
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.payment-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.02);
+}
+
+.payment-proof > span {
+  color: var(--text-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.payment-proof strong {
+  color: var(--warning);
+  font-size: 13px;
+}
+
+.payment-proof strong.status-active {
+  color: var(--success);
+}
+
+.payment-proof strong.status-inactive {
+  color: var(--danger);
+}
+
+.payment-proof small {
+  color: var(--text-muted);
+  font-size: 10px;
 }
 
 .product-card {

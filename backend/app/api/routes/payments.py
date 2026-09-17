@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -9,7 +10,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.config import settings
-from app.models.order import Order, PaymentStatus
+from app.models.order import Order, OrderStatus, PaymentStatus
+from app.models.order_status_history import OrderStatusHistory
 from app.services.payment import PaymentService
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
@@ -84,6 +86,13 @@ async def mercado_pago_webhook(
                     order = None
                 if order is not None:
                     order.payment_status = payment_status
+                    if payment_status is PaymentStatus.PAID and order.status is OrderStatus.AWAITING_PAYMENT:
+                        order.status = OrderStatus.RECEIVED
+                        order.paid_at = datetime.now(timezone.utc)
+                        order.status_history.append(OrderStatusHistory(status=OrderStatus.RECEIVED, reason="Pagamento confirmado pelo Mercado Pago"))
+                    elif payment_status is PaymentStatus.FAILED and order.status is OrderStatus.AWAITING_PAYMENT:
+                        order.status = OrderStatus.CANCELLED
+                        order.status_history.append(OrderStatusHistory(status=OrderStatus.CANCELLED, reason="Pagamento recusado pelo Mercado Pago"))
                     db.commit()
 
     return {

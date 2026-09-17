@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.order import OrderStatus, PaymentMethod
+from app.models.order import OrderStatus, PaymentMethod, PaymentStatus
 
 
 class OrderItemCreate(BaseModel):
@@ -50,12 +50,17 @@ class OrderResponse(BaseModel):
     customer_id: UUID
     status: OrderStatus
     payment_method: PaymentMethod
+    payment_status: PaymentStatus
+    paid_at: datetime | None
+    mercado_pago_order_id: str | None
+    mercado_pago_payment_id: str | None
     subtotal: Decimal
     total: Decimal
     created_at: datetime
     updated_at: datetime
     items: list[OrderItemResponse]
     status_history: list[OrderStatusHistoryResponse]
+
 
 
 class OrderStatusUpdate(BaseModel):

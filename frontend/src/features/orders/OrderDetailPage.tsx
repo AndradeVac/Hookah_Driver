@@ -6,6 +6,7 @@
   import type { OrderStatus } from '../../types'
 
   const statusSteps: Array<{ status: OrderStatus; label: string }> = [
+    { status: 'AWAITING_PAYMENT', label: 'Aguardando pagamento' },
     { status: 'RECEIVED', label: 'Pedido recebido' },
     { status: 'PREPARING', label: 'Em preparo' },
     { status: 'READY', label: 'Pronto' },
@@ -92,6 +93,12 @@
           <article className="detail-panel detail-panel-main">
             <div className="customer-name-row">{customer?.name ?? 'Cliente'}</div>
             <div className="chip">Pedido no Lounge · {order.payment_method}</div>
+            <div className="payment-proof">
+              <span>Comprovante de pagamento</span>
+              <strong className={order.payment_status === 'PAID' ? 'status-active' : order.payment_status === 'FAILED' ? 'status-inactive' : ''}>{order.payment_status === 'PAID' ? 'Pago' : order.payment_status === 'FAILED' ? 'Recusado' : 'Pendente'}</strong>
+              {order.paid_at && <small>Confirmado em {formatTime(order.paid_at)}</small>}
+              {(order.mercado_pago_payment_id || order.mercado_pago_order_id) && <small>Referência Mercado Pago: {order.mercado_pago_payment_id ?? order.mercado_pago_order_id}</small>}
+            </div>
             <div className="product-card order-items-detail">
               <h2>Itens do pedido</h2>
               {order.items.map((item) => <div className="detail-item" key={item.product_id}><div><strong>{item.quantity}x {item.product_name}</strong>{item.notes && <span>{item.notes}</span>}</div><b>{formatMoney(item.total_price)}</b></div>)}

@@ -6,6 +6,7 @@ import { getOrders, updateOrderStatus, type Order } from '../../services/orders'
 import type { OrderStatus } from '../../types'
 
 const columns: Array<{ status: OrderStatus; title: string; next?: OrderStatus; action?: string }> = [
+  { status: 'AWAITING_PAYMENT', title: 'AGUARDANDO PAGAMENTO' },
   { status: 'RECEIVED', title: 'NOVOS', next: 'PREPARING', action: 'Aceitar pedido' },
   { status: 'PREPARING', title: 'EM PREPARO', next: 'READY', action: 'Marcar como pronto' },
   { status: 'READY', title: 'PRONTOS', next: 'FINISHED', action: 'Entregar' },
@@ -74,7 +75,7 @@ export function OrdersPage() {
         <div className="pill-status">Hoje · {totalOrders} {totalOrders === 1 ? 'pedido' : 'pedidos'}</div>
       </div>
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
-      <div className="orders-filters"><label><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pedido, cliente ou produto" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} aria-label="Filtrar pedidos por status"><option value="ALL">Todos os status</option><option value="RECEIVED">Novos</option><option value="PREPARING">Em preparo</option><option value="READY">Prontos</option><option value="FINISHED">Finalizados</option></select>{(search || statusFilter !== 'ALL') && <button type="button" onClick={() => { setSearch(''); setStatusFilter('ALL') }}><X size={14} /> Limpar</button>}</div>
+      <div className="orders-filters"><label><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pedido, cliente ou produto" /></label><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} aria-label="Filtrar pedidos por status"><option value="ALL">Todos os status</option><option value="AWAITING_PAYMENT">Aguardando pagamento</option><option value="RECEIVED">Novos</option><option value="PREPARING">Em preparo</option><option value="READY">Prontos</option><option value="FINISHED">Finalizados</option></select>{(search || statusFilter !== 'ALL') && <button type="button" onClick={() => { setSearch(''); setStatusFilter('ALL') }}><X size={14} /> Limpar</button>}</div>
       {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando pedidos...</div> : <div className="orders-columns">
         {columns.map((column) => {
           const columnOrders = filteredOrders.filter((order) => order.status === column.status)

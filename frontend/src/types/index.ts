@@ -1,4 +1,4 @@
-export type OrderStatus = 'RECEIVED' | 'PREPARING' | 'READY' | 'FINISHED' | 'CANCELLED'
+export type OrderStatus = 'AWAITING_PAYMENT' | 'RECEIVED' | 'PREPARING' | 'READY' | 'FINISHED' | 'CANCELLED'
 
 export type Metric = {
   label: string

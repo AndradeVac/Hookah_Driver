@@ -8,7 +8,7 @@ const orders: OrderSummary[] = [
   { id: '4', orderNumber: '#1045', customer: 'Rafael Nunes', items: '3 itens', total: 'R$ 110,00', status: 'FINISHED', time: 'há 35 min' },
 ]
 
-const statusLabels = { RECEIVED: 'Recebido', PREPARING: 'Preparando', READY: 'Pronto', FINISHED: 'Concluído', CANCELLED: 'Cancelado' }
+const statusLabels = { AWAITING_PAYMENT: 'Aguardando pagamento', RECEIVED: 'Recebido', PREPARING: 'Preparando', READY: 'Pronto', FINISHED: 'Concluído', CANCELLED: 'Cancelado' }
 
 export function DashboardPage() {
   return (

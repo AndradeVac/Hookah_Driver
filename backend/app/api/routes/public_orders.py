@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.customer import Customer
-from app.models.order import Order, PaymentMethod
+from app.models.order import Order, OrderStatus, PaymentMethod
 from app.repositories.customer import CustomerRepository
 from app.schemas.order import OrderCreate, OrderItemCreate
 from app.schemas.public_order import PublicOrderCreate, PublicOrderResponse, PublicOrderTracking
@@ -57,7 +57,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
         customer_id=customer.id,
         payment_method=data.payment_method,
         items=[OrderItemCreate(product_id=item.product_id, quantity=item.quantity, notes=item.notes) for item in data.items],
-    ))
+    ), initial_status=OrderStatus.AWAITING_PAYMENT if data.payment_method in (PaymentMethod.PIX, PaymentMethod.CARD) else OrderStatus.RECEIVED)
 
     checkout_url = None
     pix_qr_code = None

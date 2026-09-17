@@ -7,6 +7,10 @@ export type Order = {
   customer_id: string
   status: OrderStatus
   payment_method: 'PIX' | 'CARD' | 'CASH'
+  payment_status: 'PENDING' | 'PAID' | 'FAILED'
+  paid_at: string | null
+  mercado_pago_order_id: string | null
+  mercado_pago_payment_id: string | null
   subtotal: string
   total: string
   created_at: string

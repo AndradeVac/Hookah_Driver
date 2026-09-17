@@ -25,6 +25,7 @@ from app.models.customer import Customer
 
 
 class OrderStatus(str, enum.Enum):
+    AWAITING_PAYMENT = "AWAITING_PAYMENT"
     RECEIVED = "RECEIVED"
     PREPARING = "PREPARING"
     READY = "READY"
@@ -110,6 +111,11 @@ class Order(Base):
         nullable=False,
         default=PaymentStatus.PENDING,
         server_default=text("'PENDING'::payment_status"),
+    )
+
+    paid_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
     )
 
     mercado_pago_order_id: Mapped[str | None] = mapped_column(

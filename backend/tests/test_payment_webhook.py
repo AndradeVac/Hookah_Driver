@@ -6,13 +6,16 @@ from fastapi.testclient import TestClient
 
 from app.core.database import get_db
 from app.main import app
-from app.models.order import PaymentStatus
+from app.models.order import OrderStatus, PaymentStatus
 
 
 class FakeOrder:
     def __init__(self, order_id):
         self.id = order_id
         self.payment_status = PaymentStatus.PENDING
+        self.status = OrderStatus.AWAITING_PAYMENT
+        self.paid_at = None
+        self.status_history = []
 
 
 class FakeQuery:
@@ -70,6 +73,9 @@ def test_webhook_updates_order_payment_status_to_paid(monkeypatch):
 
     assert response.status_code == 200, response.text
     assert fake_order.payment_status == PaymentStatus.PAID
+    assert fake_order.status == OrderStatus.RECEIVED
+    assert fake_order.paid_at is not None
+    assert len(fake_order.status_history) == 1
     assert fake_db.committed is True
 
 
