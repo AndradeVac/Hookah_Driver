@@ -31,7 +31,6 @@ class PaymentService:
                 "failure": return_url,
                 "pending": return_url,
             },
-            "auto_return": "approved",
             "notification_url": notification_url,
         }
 
@@ -45,6 +44,10 @@ class PaymentService:
             },
             timeout=20,
         )
+        if response.status_code != 200 and response.status_code != 201:
+            print(f"[ERROR] Mercado Pago API error: {response.status_code}")
+            print(f"[ERROR] Response: {response.text}")
+            print(f"[ERROR] Payload: {payload}")
         response.raise_for_status() if hasattr(response, "raise_for_status") else None
         data = response.json()
         print(f"[DEBUG] create_order response: {data}")
