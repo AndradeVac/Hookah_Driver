@@ -1815,6 +1815,101 @@ button { cursor: pointer; }
   .login-art-card {
     display: none;
   }
+
+  .page-header,
+  .page-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .dashboard-tools {
+    flex-wrap: wrap;
+  }
+
+  .resource-list-header {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .resource-row {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .resource-row > div:first-child {
+    flex: 1 1 100%;
+  }
+
+  .product-edit-row {
+    flex-wrap: wrap;
+  }
+
+  .product-edit-row input {
+    flex: 1 1 100%;
+  }
+
+  .product-form-grid,
+  .customer-form-grid,
+  .user-form-grid,
+  .flavor-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-form-grid .resource-submit {
+    grid-column: auto;
+  }
+
+  .resource-form-row {
+    flex-wrap: wrap;
+  }
+
+  .new-order-item-form {
+    grid-template-columns: 1fr;
+  }
+
+  .new-order-essence-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-rosh-selects {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-content {
+    padding: 16px 14px 28px;
+  }
+
+  .customer-app {
+    padding: 20px 14px 110px;
+  }
+
+  .customer-header h1 {
+    font-size: 26px;
+  }
+
+  .login-heading h2 {
+    font-size: 26px;
+  }
+
+  .customer-cart-button {
+    width: calc(100% - 24px);
+  }
+
+  .customer-header {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 1601px) {
+  .page-content {
+    max-width: 1520px;
+  }
 }
 
 /* Customer journey controls */
