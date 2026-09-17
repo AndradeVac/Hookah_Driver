@@ -85,3 +85,31 @@ def seed_ziggy_flavors(
         "skipped": skipped_count,
         "total": len(flavors_data),
     }
+
+
+@router.post("/cleanup-brands", status_code=status.HTTP_200_OK)
+def cleanup_brands(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    """Remove all brands except Ziggy, Zomo, and Adalya"""
+
+    brands_to_keep = {"Ziggy", "Zomo", "Adalya"}
+
+    brands_to_delete = db.query(Brand).filter(
+        ~Brand.name.in_(brands_to_keep)
+    ).all()
+
+    deleted_count = 0
+    for brand in brands_to_delete:
+        # Delete all flavors for this brand first
+        db.query(Flavor).filter(Flavor.brand_id == brand.id).delete()
+        db.delete(brand)
+        deleted_count += 1
+
+    db.commit()
+
+    return {
+        "deleted_brands": deleted_count,
+        "kept_brands": list(brands_to_keep),
+    }
