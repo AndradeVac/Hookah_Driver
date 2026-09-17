@@ -12,7 +12,7 @@ class DummyResponse:
         return self._payload
 
 
-def test_create_order_uses_mercado_pago_orders_api_and_returns_checkout_url(monkeypatch):
+def test_create_order_uses_wallet_checkout_preference_and_returns_checkout_url(monkeypatch):
     captured = {}
 
     def fake_post(url, json, headers, timeout):
@@ -20,12 +20,13 @@ def test_create_order_uses_mercado_pago_orders_api_and_returns_checkout_url(monk
         captured["json"] = json
         captured["headers"] = headers
         captured["timeout"] = timeout
-        return DummyResponse({"id": "ORD_123", "status": "created", "checkout_url": "https://example.com/checkout"})
+        return DummyResponse({"id": "PREF_123", "init_point": "https://example.com/checkout"})
 
     monkeypatch.setattr("app.services.payment.httpx.post", fake_post)
     monkeypatch.setattr("app.services.payment.settings.mercado_pago_access_token", "TEST_TOKEN")
     monkeypatch.setattr("app.services.payment.settings.mercado_pago_api_base_url", "https://api.mercadopago.com")
     monkeypatch.setattr("app.services.payment.settings.frontend_url", "https://app.hookahdriver.com")
+    monkeypatch.setattr("app.services.payment.settings.app_base_url", "https://api.hookahdriver.com")
 
     service = PaymentService()
     result = service.create_order(
@@ -34,17 +35,16 @@ def test_create_order_uses_mercado_pago_orders_api_and_returns_checkout_url(monk
         amount=Decimal("49.90"),
     )
 
-    assert result["order_id"] == "ORD_123"
+    assert result["order_id"] == "PREF_123"
     assert result["checkout_url"] == "https://example.com/checkout"
-    assert result["status"] == "created"
-    assert captured["url"] == "https://api.mercadopago.com/v1/orders"
+    assert result["status"] is None
+    assert captured["url"] == "https://api.mercadopago.com/checkout/preferences"
     assert captured["headers"]["Authorization"] == "Bearer TEST_TOKEN"
     assert "X-Idempotency-Key" in captured["headers"]
-    assert captured["json"]["type"] == "online"
-    assert captured["json"]["processing_mode"] == "manual"
-    assert captured["json"]["total_amount"] == "49.90"
+    assert captured["json"]["purpose"] == "wallet_purchase"
     assert captured["json"]["external_reference"] == "ord_123"
-    assert captured["json"]["config"]["online"]["success_url"].startswith("https://app.hookahdriver.com")
+    assert captured["json"]["back_urls"]["success"].startswith("https://app.hookahdriver.com")
+    assert captured["json"]["notification_url"] == "https://api.hookahdriver.com/payments/mercado-pago/webhook"
 
 
 def test_create_pix_payment_returns_qr_code(monkeypatch):

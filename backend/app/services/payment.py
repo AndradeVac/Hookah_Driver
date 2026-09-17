@@ -17,29 +17,27 @@ class PaymentService:
 
         amount_str = f"{amount:.2f}"
         return_url = f"{settings.frontend_url.rstrip('/')}{return_path}"
+        notification_url = f"{settings.app_base_url.rstrip('/')}/payments/mercado-pago/webhook"
         payload = {
-            "type": "online",
-            "total_amount": amount_str,
-            "external_reference": order_id,
-            "processing_mode": "manual",
             "items": [{
                 "title": title,
                 "quantity": 1,
-                "unit_price": amount_str,
+                "unit_price": float(amount),
+                "currency_id": "BRL",
             }],
-            "config": {
-                "online": {
-                    "success_url": return_url,
-                    "failure_url": return_url,
-                    "pending_url": return_url,
-                    "auto_return": "approved",
-                },
+            "external_reference": order_id,
+            "purpose": "wallet_purchase",
+            "back_urls": {
+                "success": return_url,
+                "failure": return_url,
+                "pending": return_url,
             },
+            "auto_return": "approved",
+            "notification_url": notification_url,
         }
 
-
         response = httpx.post(
-            f"{settings.mercado_pago_api_base_url.rstrip('/')}/v1/orders",
+            f"{settings.mercado_pago_api_base_url.rstrip('/')}/checkout/preferences",
             json=payload,
             headers={
                 "Authorization": f"Bearer {settings.mercado_pago_access_token}",
@@ -52,7 +50,7 @@ class PaymentService:
         data = response.json()
         return {
             "order_id": data.get("id"),
-            "checkout_url": data.get("checkout_url"),
+            "checkout_url": data.get("init_point") or data.get("sandbox_init_point"),
             "status": data.get("status"),
         }
 

@@ -3,7 +3,8 @@ from uuid import uuid4
 
 import pytest
 
-from app.models.order import Order, OrderStatus
+from app.core.exceptions import BusinessRuleError
+from app.models.order import Order, OrderStatus, PaymentStatus
 from app.schemas.order import OrderCreate, OrderItemCreate, OrderStatusUpdate
 from app.services.order import OrderService
 
@@ -135,6 +136,36 @@ def test_create_order_keeps_price_snapshot(monkeypatch):
 
     assert order.items[0].unit_price == Decimal("12.50")
     assert order.items[0].total_price == Decimal("25.00")
+
+
+def test_cannot_release_order_awaiting_unconfirmed_payment(monkeypatch):
+    customer = type("Customer", (), {"id": uuid4()})()
+    product = type(
+        "Product",
+        (),
+        {"id": uuid4(), "name": "Produto", "price": Decimal("12.50")},
+    )()
+    service, repository = build_service(monkeypatch, customer, {product.id: product})
+    order = service.create(
+        OrderCreate(
+            customer_id=customer.id,
+            payment_method="CARD",
+            items=[OrderItemCreate(product_id=product.id, quantity=1)],
+        ),
+        initial_status=OrderStatus.AWAITING_PAYMENT,
+    )
+    order.payment_status = PaymentStatus.PENDING
+
+    with pytest.raises(
+        BusinessRuleError,
+        match="só pode ser liberado após a confirmação do pagamento",
+    ):
+        service.update_status(
+            order.id,
+            OrderStatusUpdate(status=OrderStatus.RECEIVED),
+        )
+
+    assert repository.order.status is OrderStatus.AWAITING_PAYMENT
 
 
 def test_create_order_rejects_missing_customer(monkeypatch):

@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BusinessRuleError, NotFoundError
-from app.models.order import Order, OrderStatus
+from app.models.order import Order, OrderStatus, PaymentStatus
 from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
 from app.models.audit_log import AuditLog
@@ -105,6 +105,12 @@ class OrderService:
             raise BusinessRuleError(
                 f"Não é possível alterar {order.status.value} para {data.status.value}."
             )
+        if (
+            order.status is OrderStatus.AWAITING_PAYMENT
+            and data.status is OrderStatus.RECEIVED
+            and order.payment_status is not PaymentStatus.PAID
+        ):
+            raise BusinessRuleError("O pedido só pode ser liberado após a confirmação do pagamento.")
         if data.status is OrderStatus.CANCELLED and not data.reason:
             raise BusinessRuleError("Informe o motivo do cancelamento.")
 
