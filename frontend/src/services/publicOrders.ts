@@ -1,6 +1,6 @@
 import { api } from './api'
 
-export type PublicOrderResponse = { order_id: string; order_number: number; status: string; total: string; public_token: string; payment_status: string; checkout_url: string | null; pix_qr_code: string | null; pix_qr_code_base64: string | null }
+export type PublicOrderResponse = { order_id: string; order_number: number; status: string; total: string; public_token: string; payment_status: string; checkout_url: string | null; preference_id?: string; pix_qr_code: string | null; pix_qr_code_base64: string | null }
 
 export type PublicOrderTracking = { order_number: number; status: string; total: string; created_at: string; payment_status: string; pix_qr_code: string | null; pix_qr_code_base64: string | null }
 export type PublicHistoryOrder = { order_number: number; status: string; total: string; created_at: string; items: Array<{ product_id: string; product_name: string; quantity: number; notes: string | null }> }

@@ -36,12 +36,13 @@ def test_create_order_uses_wallet_checkout_preference_and_returns_checkout_url(m
     )
 
     assert result["order_id"] == "PREF_123"
+    assert result["preference_id"] == "PREF_123"
     assert result["checkout_url"] == "https://example.com/checkout"
     assert result["status"] == "created"
     assert captured["url"] == "https://api.mercadopago.com/checkout/preferences"
     assert captured["headers"]["Authorization"] == "Bearer TEST_TOKEN"
     assert "X-Idempotency-Key" in captured["headers"]
-    assert captured["json"]["purpose"] == "onboarding"
+    assert captured["json"]["purpose"] == "wallet_purchase"
     assert captured["json"]["external_reference"] == "ord_123"
     assert captured["json"]["back_urls"]["success"].startswith("https://app.hookahdriver.com")
     assert captured["json"]["notification_url"] == "https://api.hookahdriver.com/payments/mercado-pago/webhook"

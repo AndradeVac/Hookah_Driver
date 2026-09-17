@@ -25,7 +25,7 @@ class PaymentService:
                 "currency_id": "BRL",
             }],
             "external_reference": order_id,
-            "purpose": "onboarding",
+            "purpose": "wallet_purchase",
             "back_urls": {
                 "success": return_url,
                 "failure": return_url,
@@ -49,6 +49,7 @@ class PaymentService:
         data = response.json()
         return {
             "order_id": data.get("id"),
+            "preference_id": data.get("id"),
             "checkout_url": data.get("init_point") or data.get("sandbox_init_point"),
             "status": data.get("status"),
         }

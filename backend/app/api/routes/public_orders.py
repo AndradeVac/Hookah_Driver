@@ -60,6 +60,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
     ), initial_status=OrderStatus.AWAITING_PAYMENT if data.payment_method in (PaymentMethod.PIX, PaymentMethod.CARD) else OrderStatus.RECEIVED)
 
     checkout_url = None
+    preference_id = None
     pix_qr_code = None
     pix_qr_code_base64 = None
 
@@ -91,6 +92,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
             order.mercado_pago_order_id = checkout.get("order_id")
             db.commit()
             checkout_url = checkout.get("checkout_url")
+            preference_id = checkout.get("preference_id")
         except Exception:
             db.rollback()
 
@@ -102,6 +104,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
         public_token=order.public_token,
         payment_status=order.payment_status.value,
         checkout_url=checkout_url,
+        preference_id=preference_id,
         pix_qr_code=pix_qr_code,
         pix_qr_code_base64=pix_qr_code_base64,
     )
