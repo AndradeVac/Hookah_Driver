@@ -3,7 +3,7 @@ from app.models.category import Category
 from app.models.audit_log import AuditLog
 from app.models.customer import Customer
 from app.models.flavor import Flavor
-from app.models.order import Order, OrderStatus, PaymentMethod
+from app.models.order import Order, OrderStatus, PaymentMethod, PaymentStatus
 from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
 from app.models.product import Product
@@ -22,6 +22,7 @@ __all__ = [
     "OrderItem",
     "OrderStatusHistory",
     "PaymentMethod",
+    "PaymentStatus",
     "Product",
     "User",
 ]

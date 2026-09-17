@@ -11,6 +11,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Numeric,
+    String,
     UniqueConstraint,
     func,
     text,
@@ -34,6 +35,12 @@ class PaymentMethod(str, enum.Enum):
     PIX = "PIX"
     CARD = "CARD"
     CASH = "CASH"
+
+
+class PaymentStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    FAILED = "FAILED"
 
 
 class Order(Base):
@@ -91,6 +98,22 @@ class Order(Base):
             native_enum=True,
         ),
         nullable=False,
+    )
+
+    payment_status: Mapped[PaymentStatus] = mapped_column(
+        Enum(
+            PaymentStatus,
+            name="payment_status",
+            native_enum=True,
+        ),
+        nullable=False,
+        default=PaymentStatus.PENDING,
+        server_default=text("'PENDING'::payment_status"),
+    )
+
+    mercado_pago_order_id: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
     )
 
     subtotal: Mapped[Decimal] = mapped_column(

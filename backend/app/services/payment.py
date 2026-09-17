@@ -9,13 +9,14 @@ from app.core.config import settings
 
 
 class PaymentService:
-    def create_order(self, *, order_id: str, title: str, amount: Decimal) -> dict:
+    def create_order(self, *, order_id: str, title: str, amount: Decimal, return_path: str = "/checkout") -> dict:
         if not settings.mercado_pago_access_token:
             raise RuntimeError(
                 "MERCADO_PAGO_ACCESS_TOKEN não configurado. Defina o token antes de habilitar pagamentos reais."
             )
 
         amount_str = f"{amount:.2f}"
+        return_url = f"{settings.frontend_url.rstrip('/')}{return_path}"
         payload = {
             "type": "online",
             "total_amount": amount_str,
@@ -28,13 +29,14 @@ class PaymentService:
             }],
             "config": {
                 "online": {
-                    "success_url": f"{settings.frontend_url.rstrip('/')}/checkout/success",
-                    "failure_url": f"{settings.frontend_url.rstrip('/')}/checkout/failure",
-                    "pending_url": f"{settings.frontend_url.rstrip('/')}/checkout/pending",
+                    "success_url": return_url,
+                    "failure_url": return_url,
+                    "pending_url": return_url,
                     "auto_return": "approved",
                 },
             },
         }
+
 
         response = httpx.post(
             f"{settings.mercado_pago_api_base_url.rstrip('/')}/v1/orders",
@@ -80,5 +82,34 @@ class PaymentService:
             hashlib.sha256,
         ).hexdigest()
         return hmac.compare_digest(digest, received_hash)
+
+    def get_payment_status(self, payment_id: str) -> dict:
+        response = httpx.get(
+            f"{settings.mercado_pago_api_base_url.rstrip('/')}/v1/payments/{payment_id}",
+            headers={"Authorization": f"Bearer {settings.mercado_pago_access_token}"},
+            timeout=20,
+        )
+        response.raise_for_status() if hasattr(response, "raise_for_status") else None
+        data = response.json()
+        return {
+            "status": data.get("status"),
+            "external_reference": data.get("external_reference"),
+        }
+
+    def get_order_status(self, order_id: str) -> dict:
+        response = httpx.get(
+            f"{settings.mercado_pago_api_base_url.rstrip('/')}/v1/orders/{order_id}",
+            headers={"Authorization": f"Bearer {settings.mercado_pago_access_token}"},
+            timeout=20,
+        )
+        response.raise_for_status() if hasattr(response, "raise_for_status") else None
+        data = response.json()
+        return {
+            "status": data.get("status"),
+            "status_detail": data.get("status_detail"),
+            "external_reference": data.get("external_reference"),
+            "total_paid_amount": data.get("total_paid_amount"),
+        }
+
 
 

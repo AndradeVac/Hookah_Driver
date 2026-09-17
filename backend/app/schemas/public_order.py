@@ -24,6 +24,9 @@ class PublicOrderResponse(BaseModel):
     status: str
     total: str
     public_token: UUID
+    payment_status: str
+    checkout_url: str | None = None
+
 
 
 class PublicOrderTracking(BaseModel):
@@ -31,3 +34,4 @@ class PublicOrderTracking(BaseModel):
     status: str
     total: str
     created_at: str
+    payment_status: str
