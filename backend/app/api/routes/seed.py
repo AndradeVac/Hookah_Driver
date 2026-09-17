@@ -92,7 +92,8 @@ def cleanup_brands(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    """Remove all brands except Ziggy, Zomo, and Adalya"""
+    """Remove all brands except Ziggy, Zomo, and Adalya, plus associated products and flavors"""
+    from app.models.product import Product
 
     brands_to_keep = {"Ziggy", "Zomo", "Adalya"}
 
@@ -102,7 +103,12 @@ def cleanup_brands(
 
     deleted_count = 0
     for brand in brands_to_delete:
-        # Delete all flavors for this brand first
+        # Delete all products for flavors of this brand
+        flavors = db.query(Flavor).filter(Flavor.brand_id == brand.id).all()
+        for flavor in flavors:
+            db.query(Product).filter(Product.flavor_id == flavor.id).delete()
+
+        # Delete all flavors for this brand
         db.query(Flavor).filter(Flavor.brand_id == brand.id).delete()
         db.delete(brand)
         deleted_count += 1
