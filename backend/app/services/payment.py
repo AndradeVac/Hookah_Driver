@@ -47,6 +47,7 @@ class PaymentService:
         )
         response.raise_for_status() if hasattr(response, "raise_for_status") else None
         data = response.json()
+        print(f"[DEBUG] create_order response: {data}")
         return {
             "order_id": data.get("id"),
             "preference_id": data.get("id"),
