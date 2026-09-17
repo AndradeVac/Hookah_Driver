@@ -16,7 +16,7 @@ def create_payment_checkout(
     title: str,
     amount: Decimal,
 ):
-    return PaymentService().create_preference(
+    return PaymentService().create_order(
         order_id=order_id,
         title=title,
         amount=amount,
