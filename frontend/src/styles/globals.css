@@ -1996,6 +1996,15 @@ button { cursor: pointer; }
   font-size: 11px;
 }
 
+.success-mark-pending {
+  background: var(--warning) !important;
+  color: #101512 !important;
+}
+
+.status-label-pending {
+  color: var(--warning) !important;
+}
+
 
 /* Customer journey controls */
 .customer-categories button,
