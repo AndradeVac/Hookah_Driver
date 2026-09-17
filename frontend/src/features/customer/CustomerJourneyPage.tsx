@@ -77,52 +77,6 @@ export function CustomerJourneyPage() {
     return () => socket.close()
   }, [order?.public_token, step])
 
-  useEffect(() => {
-    if (step !== 'success' || payment !== 'CARD' || !order?.preference_id || !order?.checkout_url) return
-    if (order.payment_status === 'PAID') return
-
-    const container = document.getElementById('payment-brick-container')
-    if (!container) return
-
-    const script = document.createElement('script')
-    script.src = 'https://resources.mercadopago.com/v2/checkout.js'
-    script.async = true
-    script.onload = () => {
-      const mercadoPago = (window as any).MercadoPago
-      if (!mercadoPago) return
-
-      mercadoPago.Bricks({
-        instance: 'payment',
-        locale: 'pt-BR',
-        initialization: {
-          amount: Number(order.total),
-          preferenceId: order.preference_id,
-        },
-        customization: {
-          visual: {
-            hidePaymentMethod: ['ticket', 'atm'],
-          },
-        },
-        onSubmit: async () => {
-          setError('Processando pagamento...')
-        },
-        onReady: () => {
-          setError('')
-        },
-        onError: (error: any) => {
-          setError(`Erro ao processar pagamento: ${error?.message || 'Tente novamente'}`)
-        },
-      }).mount(container)
-    }
-    document.head.appendChild(script)
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script)
-      }
-    }
-  }, [step, payment, order?.preference_id, order?.checkout_url, order?.payment_status, order?.total])
-
   const roshCategory = categories.find((item) => ['rosh', 'essências'].includes(item.name.toLowerCase()))
   const brandFlavors = flavors.filter((item) => item.brand_id === brand?.id)
   const rosh = products.find((item) => item.category_id === roshCategory?.id && item.flavor_id && brandFlavors.some((itemFlavor) => itemFlavor.id === item.flavor_id))
@@ -157,7 +111,7 @@ export function CustomerJourneyPage() {
     {step === 'cart' && <section className="customer-panel"><button className="customer-back" onClick={() => setStep('menu')}><ArrowLeft size={16} /> Menu</button><h2>Resumo do pedido</h2>{cart.length ? cart.map((item) => <div className="customer-cart-row" key={`${item.product.id}-${item.variation}`}><img src={imageFor(item.product.name)} alt="" /><div><strong>{item.product.name}</strong><span>{item.variation || ''}{item.notes ? ` · ${item.notes}` : ''}</span></div><div><button onClick={() => change(item, -1)}><Minus size={14} /></button><b>{item.quantity}</b><button onClick={() => change(item, 1)}><Plus size={14} /></button></div></div>) : <div className="customer-empty">Seu pedido está vazio.</div>}<div className="customer-total">Total <strong>{money(total)}</strong></div><button className="customer-primary" disabled={!cart.length} onClick={() => setStep('customer')}>Confirmar pedido <ArrowRight size={16} /></button></section>}
     {step === 'customer' && <section className="customer-panel"><button className="customer-back" onClick={() => setStep('cart')}><ArrowLeft size={16} /> Carrinho</button><h2>Confirmar seus dados</h2><p className="customer-muted">{name} · {phone}</p><button className="customer-primary" onClick={() => setStep('payment')}>Continuar <ArrowRight size={16} /></button></section>}
     {step === 'payment' && <section className="customer-panel"><button className="customer-back" onClick={() => setStep('customer')}><ArrowLeft size={16} /> Dados</button><h2>Pagamento</h2><div className="payment-choice"><button className={payment === 'PIX' ? 'active' : ''} onClick={() => setPayment('PIX')}>PIX</button><button className={payment === 'CARD' ? 'active' : ''} onClick={() => setPayment('CARD')}>Carteira digital</button></div><div className="customer-total">Total <strong>{money(total)}</strong></div><button className="customer-primary" disabled={sending} onClick={() => void submit()}>{sending ? 'Enviando...' : 'Ir para pagamento'} <Check size={16} /></button></section>}
-    {step === 'success' && order && <section className="customer-success">{payment === 'CARD' && order.payment_status !== 'PAID' && order.checkout_url && <div id="payment-brick-container" className="customer-payment-brick"></div>}{payment === 'PIX' && order.payment_status !== 'PAID' && (order.pix_qr_code_base64 || order.pix_qr_code) && <div className="customer-pix-box"><span>Escaneie o QR Code ou copie o código Pix</span>{order.pix_qr_code_base64 && <img className="pix-qr-image" src={`data:image/png;base64,${order.pix_qr_code_base64}`} alt="QR Code Pix" />}{order.pix_qr_code && <button type="button" className="customer-primary" onClick={() => { void navigator.clipboard.writeText(order.pix_qr_code ?? ''); setError('Código Pix copiado.') }}>Copiar código Pix</button>}<small>Aguardando confirmação do pagamento...</small></div>}<div className={liveStatus === 'AWAITING_PAYMENT' ? 'success-mark success-mark-pending' : 'success-mark'}>{liveStatus === 'AWAITING_PAYMENT' ? <Clock size={30} /> : <Check size={30} />}</div><span className={liveStatus === 'AWAITING_PAYMENT' ? 'status-label-pending' : ''}>{liveStatus === 'FINISHED' ? 'Pedido entregue' : liveStatus === 'CANCELLED' ? 'Pedido cancelado' : liveStatus === 'READY' ? 'Pedido pronto' : liveStatus === 'AWAITING_PAYMENT' ? 'Aguardando pagamento' : 'Pedido recebido'}</span><h2>Pedido #{order.order_number}</h2><p>{liveStatus === 'AWAITING_PAYMENT' ? 'Assim que o pagamento for confirmado, seu pedido segue para o lounge.' : liveStatus === 'PREPARING' ? 'Seu pedido está sendo preparado.' : liveStatus === 'READY' ? 'Seu pedido está pronto.' : liveStatus === 'FINISHED' ? 'Obrigado por pedir com a gente.' : liveStatus === 'CANCELLED' ? 'Esse pedido foi cancelado.' : 'Seu pedido foi enviado para o lounge.'}</p><strong>{money(order.total)}</strong><div className="customer-status-track"><span className={liveStatus === 'AWAITING_PAYMENT' ? 'active' : ''}>Aguardando pagamento</span><span className={liveStatus === 'RECEIVED' ? 'active' : ''}>Pedido recebido</span><span className={liveStatus === 'PREPARING' ? 'active' : ''}>Em preparo</span><span className={liveStatus === 'READY' ? 'active' : ''}>Pronto</span><span className={liveStatus === 'FINISHED' ? 'active' : ''}>Entregue</span></div><button className="customer-primary" type="button" onClick={() => { setCart([]); setOrder(null); setStep('menu') }}>Voltar ao início</button></section>}
+    {step === 'success' && order && <section className="customer-success">{payment === 'CARD' && order.payment_status !== 'PAID' && order.checkout_url && <div className="customer-payment-container"><h3>Carteira Digital</h3><iframe src={order.checkout_url} className="customer-payment-iframe" title="Mercado Pago Checkout"></iframe><small>Você será redirecionado após confirmar o pagamento.</small></div>}{payment === 'PIX' && order.payment_status !== 'PAID' && (order.pix_qr_code_base64 || order.pix_qr_code) && <div className="customer-pix-box"><span>Escaneie o QR Code ou copie o código Pix</span>{order.pix_qr_code_base64 && <img className="pix-qr-image" src={`data:image/png;base64,${order.pix_qr_code_base64}`} alt="QR Code Pix" />}{order.pix_qr_code && <button type="button" className="customer-primary" onClick={() => { void navigator.clipboard.writeText(order.pix_qr_code ?? ''); setError('Código Pix copiado.') }}>Copiar código Pix</button>}<small>Aguardando confirmação do pagamento...</small></div>}<div className={liveStatus === 'AWAITING_PAYMENT' ? 'success-mark success-mark-pending' : 'success-mark'}>{liveStatus === 'AWAITING_PAYMENT' ? <Clock size={30} /> : <Check size={30} />}</div><span className={liveStatus === 'AWAITING_PAYMENT' ? 'status-label-pending' : ''}>{liveStatus === 'FINISHED' ? 'Pedido entregue' : liveStatus === 'CANCELLED' ? 'Pedido cancelado' : liveStatus === 'READY' ? 'Pedido pronto' : liveStatus === 'AWAITING_PAYMENT' ? 'Aguardando pagamento' : 'Pedido recebido'}</span><h2>Pedido #{order.order_number}</h2><p>{liveStatus === 'AWAITING_PAYMENT' ? 'Assim que o pagamento for confirmado, seu pedido segue para o lounge.' : liveStatus === 'PREPARING' ? 'Seu pedido está sendo preparado.' : liveStatus === 'READY' ? 'Seu pedido está pronto.' : liveStatus === 'FINISHED' ? 'Obrigado por pedir com a gente.' : liveStatus === 'CANCELLED' ? 'Esse pedido foi cancelado.' : 'Seu pedido foi enviado para o lounge.'}</p><strong>{money(order.total)}</strong><div className="customer-status-track"><span className={liveStatus === 'AWAITING_PAYMENT' ? 'active' : ''}>Aguardando pagamento</span><span className={liveStatus === 'RECEIVED' ? 'active' : ''}>Pedido recebido</span><span className={liveStatus === 'PREPARING' ? 'active' : ''}>Em preparo</span><span className={liveStatus === 'READY' ? 'active' : ''}>Pronto</span><span className={liveStatus === 'FINISHED' ? 'active' : ''}>Entregue</span></div><button className="customer-primary" type="button" onClick={() => { setCart([]); setOrder(null); setStep('menu') }}>Voltar ao início</button></section>}
     {step !== 'register' && step !== 'success' && <button className="customer-cart-button" onClick={() => setStep('cart')}><ShoppingBag size={18} /><span>{cart.reduce((sum, item) => sum + item.quantity, 0)} itens</span><strong>{money(total)}</strong></button>}
   </main>
 }
