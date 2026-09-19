@@ -794,7 +794,9 @@ export function CustomerJourneyPage() {
                   <button
                     onClick={() => {
                       add(rosh, flavor.name);
-                      toast.success(`✅ Rosh ${flavor.name} adicionado ao carrinho!`);
+                      toast.success(
+                        `✅ Rosh ${flavor.name} adicionado ao carrinho!`,
+                      );
                       setStep("cart");
                     }}
                   >
