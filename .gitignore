@@ -10,3 +10,14 @@ __pycache__/
 # Frontend dependencies and builds
 node_modules/
 dist/
+
+# Python runtime (do not commit embedded Python)
+Python/
+backend/Python/
+**/pythoncore*/
+*.exe
+*.dll
+*.lib
+
+# Mockups without product photos
+MOCKUPS\ SEM\ ANVISA/
