@@ -91,11 +91,11 @@ deactivate_products(bebidas, {"Água", "Coca", "Monster", "Intake"})
 
 # --- Combos ---
 combos = get_category("Combos")
-upsert_product(combos, "Combo Vício", "120.00", "3 rosh")
-upsert_product(combos, "Combo free", "50.00", "Rosh + coca")
-upsert_product(combos, "Combo 3 Águas", "12.00", "3 águas")
-upsert_product(combos, "Combo 3 Cocas", "20.00", "3 cocas")
-deactivate_products(combos, {"Combo Vício", "Combo free", "Combo 3 Águas", "Combo 3 Cocas"})
+upsert_product(combos, "Combo 1", "50.00", "Rosh + coca")
+upsert_product(combos, "Combo 2", "120.00", "3 rosh")
+upsert_product(combos, "Combo 3", "20.00", "3 cocas")
+upsert_product(combos, "Combo 4", "12.00", "3 águas")
+deactivate_products(combos, {"Combo 1", "Combo 2", "Combo 3", "Combo 4"})
 
 # --- Kits ---
 kits = get_category("Kits")
