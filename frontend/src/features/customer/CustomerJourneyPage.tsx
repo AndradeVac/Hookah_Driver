@@ -752,58 +752,62 @@ export function CustomerJourneyPage() {
           )}
           {step === "flavors" && (
             <div className="journey-options">
-              {brandFlavors.map((item) => {
-                const hasRosh = products.some(
-                  (p) =>
-                    p.category_id === roshCategory?.id &&
-                    p.flavor_id === item.id,
-                );
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setFlavor(item);
-                      setStep("rosh");
-                    }}
-                    disabled={!hasRosh}
-                  >
-                    <img
-                      src={resolveImage(item.image_url)}
-                      onError={onImageError}
-                      alt=""
-                    />
-                    <span>
-                      <strong>{item.name}</strong>
-                      <small>
-                        {brand?.name}
-                        {!hasRosh && " (indisponível)"}
-                      </small>
-                    </span>
-                    <ChevronRight size={17} />
-                  </button>
-                );
-              })}
+              {brandFlavors.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setFlavor(item);
+                    setStep("rosh");
+                  }}
+                >
+                  <img
+                    src={resolveImage(item.image_url)}
+                    onError={onImageError}
+                    alt=""
+                  />
+                  <span>
+                    <strong>{item.name}</strong>
+                    <small>{brand?.name}</small>
+                  </span>
+                  <ChevronRight size={17} />
+                </button>
+              ))}
             </div>
-          )
-          {step === "rosh" && rosh && flavor && (
+          )}
+          {step === "rosh" && flavor && (
             <article className="journey-rosh-card">
-              <img
-                src={resolveImage(flavor.image_url)}
-                onError={onImageError}
-                alt="Rosh"
-              />
-              <span>{brand?.name}</span>
-              <h2>Rosh</h2>
-              <p>Sabor {flavor.name}</p>
-              <strong>{money(rosh.price)}</strong>
-              <button
-                onClick={() => {
-                  add(rosh, flavor.name);
-                  setStep("cart");
-                }}
-              >
-                Adicionar ao pedido <Plus size={16} />
-              </button>
+              {rosh ? (
+                <>
+                  <img
+                    src={resolveImage(flavor.image_url)}
+                    onError={onImageError}
+                    alt="Rosh"
+                  />
+                  <span>{brand?.name}</span>
+                  <h2>Rosh</h2>
+                  <p>Sabor {flavor.name}</p>
+                  <strong>{money(rosh.price)}</strong>
+                  <button
+                    onClick={() => {
+                      add(rosh, flavor.name);
+                      setStep("cart");
+                    }}
+                  >
+                    Adicionar ao pedido <Plus size={16} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h2>Sabor não disponível</h2>
+                  <p>Este sabor não possui rosh cadastrado no momento.</p>
+                  <button
+                    className="customer-primary"
+                    onClick={() => setStep("flavors")}
+                  >
+                    Voltar aos sabores
+                  </button>
+                </>
+              )}
             </article>
           )}
         </section>
