@@ -27,6 +27,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 IMAGES_ROOT = REPO_ROOT / "frontend" / "public" / "images"
 ESSENCIAS_DIR = IMAGES_ROOT / "essencias"
 PRODUCTS_DIR = IMAGES_ROOT / "products"
+MARCAS_DIR = IMAGES_ROOT / "marcas"
+CATEGORIAS_DIR = IMAGES_ROOT / "categorias"
 
 
 def slugify(value: str) -> str:
@@ -70,15 +72,30 @@ def main() -> int:
 
     essencias = index_dir(ESSENCIAS_DIR)
     products_idx = index_dir(PRODUCTS_DIR)
+    marcas_idx = index_dir(MARCAS_DIR)
+    categorias_idx = index_dir(CATEGORIAS_DIR)
 
     db = SessionLocal()
     matched_flavors = 0
     matched_products = 0
+    matched_brands = 0
+    matched_categories = 0
     missing_flavors: list[str] = []
     missing_products: list[str] = []
+    missing_brands: list[str] = []
+    missing_categories: list[str] = []
 
     try:
         brands = {b.id: b.name for b in db.query(Brand).all()}
+
+        # --- Brands: {brand} in marcas/ ---
+        for brand in db.query(Brand).all():
+            file = marcas_idx.get(slugify(brand.name))
+            if file is not None:
+                brand.image_url = public_path(file)
+                matched_brands += 1
+            else:
+                missing_brands.append(f"{brand.name}  (esperado: marcas/{slugify(brand.name)}.png)")
 
         # --- Flavors: {brand}-{flavor} in essencias ---
         for flavor in db.query(Flavor).all():
@@ -96,6 +113,18 @@ def main() -> int:
 
         # --- Products: match by normalized name across products/ tree ---
         categories = {c.id: c.name for c in db.query(Category).all()}
+
+        # --- Categories: {category} in categorias/ ---
+        for category in db.query(Category).all():
+            file = categorias_idx.get(slugify(category.name))
+            if file is not None:
+                category.image_url = public_path(file)
+                matched_categories += 1
+            else:
+                missing_categories.append(
+                    f"{category.name}  (esperado: categorias/{slugify(category.name)}.png)"
+                )
+
         for product in db.query(Product).all():
             file = products_idx.get(slugify(product.name))
             if file is not None:
@@ -113,8 +142,18 @@ def main() -> int:
         db.close()
 
     print("=" * 60)
-    print(f"Flavors  com imagem: {matched_flavors} | sem imagem: {len(missing_flavors)}")
-    print(f"Products com imagem: {matched_products} | sem imagem: {len(missing_products)}")
+    print(f"Brands     com imagem: {matched_brands} | sem imagem: {len(missing_brands)}")
+    print(f"Categories com imagem: {matched_categories} | sem imagem: {len(missing_categories)}")
+    print(f"Flavors    com imagem: {matched_flavors} | sem imagem: {len(missing_flavors)}")
+    print(f"Products   com imagem: {matched_products} | sem imagem: {len(missing_products)}")
+    if missing_brands:
+        print("\n[FALTAM] Marcas sem imagem real:")
+        for item in sorted(missing_brands):
+            print(f"  - {item}")
+    if missing_categories:
+        print("\n[FALTAM] Categorias sem imagem real:")
+        for item in sorted(missing_categories):
+            print(f"  - {item}")
     if missing_flavors:
         print("\n[FALTAM] Sabores sem imagem real:")
         for item in sorted(missing_flavors):

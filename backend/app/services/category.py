@@ -24,6 +24,7 @@ class CategoryService:
 
         category = Category(
             name=data.name,
+            image_url=data.image_url,
         )
 
         self.repository.create(category)
@@ -55,6 +56,9 @@ class CategoryService:
 
         if data.name is not None:
             category.name = data.name
+
+        if "image_url" in data.model_fields_set:
+            category.image_url = data.image_url
 
         if data.active is not None:
             category.active = data.active

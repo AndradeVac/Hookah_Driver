@@ -3,6 +3,7 @@ import { api } from './api'
 export type Brand = {
   id: string
   name: string
+  image_url: string | null
   active: boolean
   created_at: string
   updated_at: string

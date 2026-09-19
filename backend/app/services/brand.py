@@ -24,6 +24,7 @@ class BrandService:
 
         brand = Brand(
             name=data.name,
+            image_url=data.image_url,
         )
 
         self.repository.create(brand)
@@ -59,6 +60,9 @@ class BrandService:
 
         if data.name is not None:
             brand.name = data.name
+
+        if "image_url" in data.model_fields_set:
+            brand.image_url = data.image_url
 
         if data.active is not None:
             brand.active = data.active
