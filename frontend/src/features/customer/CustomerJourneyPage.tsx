@@ -15,6 +15,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
+import { toast } from "sonner";
 import { getBrands, type Brand } from "../../services/brands";
 import { getCategories, type Category } from "../../services/categories";
 import { getFlavors, type Flavor } from "../../services/flavors";
@@ -708,6 +709,9 @@ export function CustomerJourneyPage() {
               for (let index = 1; index < productQuantity; index += 1)
                 add(selectedProduct, undefined, productNotes);
               selectedExtras.forEach((extra) => add(extra));
+              toast.success(
+                `✅ ${selectedProduct.name} adicionado ao carrinho!`,
+              );
               setStep("cart");
             }}
           >
@@ -790,6 +794,7 @@ export function CustomerJourneyPage() {
                   <button
                     onClick={() => {
                       add(rosh, flavor.name);
+                      toast.success(`✅ Rosh ${flavor.name} adicionado ao carrinho!`);
                       setStep("cart");
                     }}
                   >
