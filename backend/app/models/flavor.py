@@ -47,6 +47,11 @@ class Flavor(Base):
         nullable=True,
     )
 
+    image_url: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+    )
+
     active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

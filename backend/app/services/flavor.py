@@ -29,6 +29,7 @@ class FlavorService:
         if existing_flavor is not None and not existing_flavor.active:
             existing_flavor.active = True
             existing_flavor.description = data.description
+            existing_flavor.image_url = data.image_url
             self.repository.update(existing_flavor)
             self.db.commit()
             return existing_flavor
@@ -37,6 +38,7 @@ class FlavorService:
             brand_id=data.brand_id,
             name=data.name,
             description=data.description,
+            image_url=data.image_url,
         )
 
         self.repository.create(flavor)
@@ -75,6 +77,9 @@ class FlavorService:
 
         if data.description is not None:
             flavor.description = data.description
+
+        if "image_url" in data.model_fields_set:
+            flavor.image_url = data.image_url
 
         if data.active is not None:
             flavor.active = data.active

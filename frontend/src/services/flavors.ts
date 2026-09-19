@@ -5,6 +5,7 @@ export type Flavor = {
   brand_id: string
   name: string
   description: string | null
+  image_url: string | null
   active: boolean
 }
 

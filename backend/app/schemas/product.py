@@ -10,6 +10,7 @@ class ProductCreate(BaseModel):
     flavor_id: UUID | None = None
     name: str
     description: str | None = None
+    image_url: str | None = None
     price: Decimal
 
 
@@ -18,6 +19,7 @@ class ProductUpdate(BaseModel):
     flavor_id: UUID | None = None
     name: str | None = None
     description: str | None = None
+    image_url: str | None = None
     price: Decimal | None = None
     active: bool | None = None
 
@@ -30,6 +32,7 @@ class ProductResponse(BaseModel):
     flavor_id: UUID | None = None
     name: str
     description: str | None
+    image_url: str | None = None
     price: Decimal
     active: bool
     created_at: datetime

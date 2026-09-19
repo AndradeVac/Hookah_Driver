@@ -7,12 +7,14 @@ class FlavorCreate(BaseModel):
     brand_id: UUID
     name: str
     description: str | None = None
+    image_url: str | None = None
 
 
 class FlavorUpdate(BaseModel):
     brand_id: UUID | None = None
     name: str | None = None
     description: str | None = None
+    image_url: str | None = None
     active: bool | None = None
 
 
@@ -23,4 +25,5 @@ class FlavorResponse(BaseModel):
     brand_id: UUID
     name: str
     description: str | None
+    image_url: str | None = None
     active: bool

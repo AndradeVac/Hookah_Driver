@@ -6,6 +6,7 @@ export type Product = {
   flavor_id: string | null
   name: string
   description: string | null
+  image_url: string | null
   price: string
   active: boolean
   created_at?: string

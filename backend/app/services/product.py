@@ -40,6 +40,7 @@ class ProductService:
             flavor_id=data.flavor_id,
             name=data.name,
             description=data.description,
+            image_url=data.image_url,
             price=data.price,
         )
 
@@ -83,6 +84,9 @@ class ProductService:
 
         if data.description is not None:
             product.description = data.description
+
+        if "image_url" in data.model_fields_set:
+            product.image_url = data.image_url
 
         if data.price is not None:
             product.price = data.price

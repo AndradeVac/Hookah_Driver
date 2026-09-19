@@ -1,4 +1,6 @@
-﻿.customer-register small { display:block; color:var(--text-muted); font-size:10px; line-height:1.5; }
+﻿@import 'tailwindcss';
+
+.customer-register small { display:block; color:var(--text-muted); font-size:10px; line-height:1.5; }
 .customer-register .customer-validation { color:#ffb1b1; }
 .journey-menu, .journey-panel { width:min(100%,720px); margin:0 auto; }
 .journey-feature { display:flex; gap:18px; align-items:center; overflow:hidden; }
@@ -19,7 +21,6 @@
 .scanner-frame video:not([srcobject]) { display:none; }
 .customer-scanner-card label { display:block; margin:15px 0 0; color:var(--text-soft); font-size:11px; text-align:left; }
 .customer-scanner-card input { width:100%; margin-top:7px; border:1px solid rgba(255,255,255,.1); border-radius:9px; padding:11px; background:rgba(255,255,255,.04); color:var(--text); }
-@import 'tailwindcss';
 
 :root {
   font-family: 'Inter', 'Segoe UI', sans-serif;
@@ -50,6 +51,25 @@
   --shadow: rgba(4, 8, 10, 0.32);
   --login-bg: #f3f2ef;
   --login-ink: #1a1d1d;
+
+  /* Design system scale tokens */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --font-xs: 11px;
+  --font-sm: 13px;
+  --font-md: 15px;
+  --font-lg: 20px;
+  --font-xl: 28px;
+  --tap-target: 44px;
 }
 
 * { box-sizing: border-box; }
@@ -1956,6 +1976,24 @@ button { cursor: pointer; }
 
   .customer-header {
     flex-wrap: wrap;
+  }
+
+  .journey-categories button,
+  .journey-options button,
+  .journey-extras button {
+    min-height: var(--tap-target);
+  }
+
+  .journey-feature {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .journey-feature img {
+    width: 100%;
+    flex-basis: auto;
+    height: 140px;
   }
 }
 
