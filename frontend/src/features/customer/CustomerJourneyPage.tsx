@@ -752,28 +752,39 @@ export function CustomerJourneyPage() {
           )}
           {step === "flavors" && (
             <div className="journey-options">
-              {brandFlavors.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setFlavor(item);
-                    setStep("rosh");
-                  }}
-                >
-                  <img
-                    src={resolveImage(item.image_url)}
-                    onError={onImageError}
-                    alt=""
-                  />
-                  <span>
-                    <strong>{item.name}</strong>
-                    <small>{brand?.name}</small>
-                  </span>
-                  <ChevronRight size={17} />
-                </button>
-              ))}
+              {brandFlavors.map((item) => {
+                const hasRosh = products.some(
+                  (p) =>
+                    p.category_id === roshCategory?.id &&
+                    p.flavor_id === item.id,
+                );
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setFlavor(item);
+                      setStep("rosh");
+                    }}
+                    disabled={!hasRosh}
+                  >
+                    <img
+                      src={resolveImage(item.image_url)}
+                      onError={onImageError}
+                      alt=""
+                    />
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>
+                        {brand?.name}
+                        {!hasRosh && " (indisponível)"}
+                      </small>
+                    </span>
+                    <ChevronRight size={17} />
+                  </button>
+                );
+              })}
             </div>
-          )}
+          )
           {step === "rosh" && rosh && flavor && (
             <article className="journey-rosh-card">
               <img

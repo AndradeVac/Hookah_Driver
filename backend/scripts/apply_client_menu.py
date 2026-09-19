@@ -99,9 +99,9 @@ deactivate_products(combos, {"Combo 1", "Combo 2", "Combo 3", "Combo 4"})
 
 # --- Kits ---
 kits = get_category("Kits")
-upsert_product(kits, "Kit sessão", "40.00", "1 essência + 6 carvão + 3 alumínio")
-upsert_product(kits, "Kit sessão master", "100.00", "3 essência + 18 carvão + 9 alumínio")
-deactivate_products(kits, {"Kit sessão", "Kit sessão master"})
+upsert_product(kits, "Kit o básico", "40.00", "1 essência + 6 carvão + 3 alumínio")
+upsert_product(kits, "Kit o completo", "100.00", "3 essência + 18 carvão + 9 alumínio")
+deactivate_products(kits, {"Kit o básico", "Kit o completo"})
 
 # --- Retire categories no longer part of the menu ---
 for old_category_name in ("Carvões", "Porções"):
