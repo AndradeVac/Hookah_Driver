@@ -1,152 +1,430 @@
-import { AlertCircle, Check, ChevronDown, CircleOff, Edit3, Eye, EyeOff, LoaderCircle, Plus, Save, X } from 'lucide-react'
-import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { getCategories, type Category } from '../../services/categories'
-import { getBrands, type Brand } from '../../services/brands'
-import { getFlavors, type Flavor } from '../../services/flavors'
-import { createProduct, getProducts, updateProduct, updateProductStatus, type Product } from '../../services/products'
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  CircleOff,
+  Edit3,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  Plus,
+  Save,
+  X,
+} from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { getCategories, type Category } from "../../services/categories";
+import { getBrands, type Brand } from "../../services/brands";
+import { getFlavors, type Flavor } from "../../services/flavors";
+import {
+  createProduct,
+  getProducts,
+  updateProduct,
+  updateProductStatus,
+  type Product,
+} from "../../services/products";
 
 export function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [flavors, setFlavors] = useState<Flavor[]>([])
-  const [categoryId, setCategoryId] = useState('')
-  const [brandId, setBrandId] = useState('')
-  const [flavorId, setFlavorId] = useState('')
-  const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
-  const [description, setDescription] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [showAll, setShowAll] = useState(false)
-  const [listOpen, setListOpen] = useState(true)
-  const [updatingId, setUpdatingId] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editPrice, setEditPrice] = useState('')
-  const [editDescription, setEditDescription] = useState('')
-  const [error, setError] = useState('')
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [flavors, setFlavors] = useState<Flavor[]>([]);
+  const [categoryId, setCategoryId] = useState("");
+  const [brandId, setBrandId] = useState("");
+  const [flavorId, setFlavorId] = useState("");
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [description, setDescription] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [listOpen, setListOpen] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     Promise.all([getProducts(), getCategories(), getBrands(), getFlavors()])
-      .then(([loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {
-        setProducts(loadedProducts)
-        const activeCategories = loadedCategories.filter((category) => category.active)
-        setCategories(activeCategories)
-        setBrands(loadedBrands.filter((brand) => brand.active))
-        setFlavors(loadedFlavors.filter((flavor) => flavor.active))
-        setCategoryId(activeCategories[0]?.id ?? '')
-        setBrandId(loadedBrands.find((brand) => brand.active)?.id ?? '')
-      })
-      .catch(() => setError('Não foi possível carregar produtos e categorias.'))
-      .finally(() => setIsLoading(false))
-  }, [])
+      .then(
+        ([loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {
+          setProducts(loadedProducts);
+          const activeCategories = loadedCategories.filter(
+            (category) => category.active,
+          );
+          setCategories(activeCategories);
+          setBrands(loadedBrands.filter((brand) => brand.active));
+          setFlavors(loadedFlavors.filter((flavor) => flavor.active));
+          setCategoryId(activeCategories[0]?.id ?? "");
+          setBrandId(loadedBrands.find((brand) => brand.active)?.id ?? "");
+        },
+      )
+      .catch(() => setError("Não foi possível carregar produtos e categorias."))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!categoryId || (!isRoshCategory && !name.trim()) || (isRoshCategory && !flavorId) || !price) return
+    event.preventDefault();
+    if (
+      !categoryId ||
+      (!isRoshCategory && !name.trim()) ||
+      (isRoshCategory && !flavorId) ||
+      !price
+    )
+      return;
 
-    setIsSaving(true)
-    setError('')
+    setIsSaving(true);
+    setError("");
     try {
       const product = await createProduct({
         category_id: categoryId,
         flavor_id: isRoshCategory ? flavorId : undefined,
-        name: isRoshCategory ? 'Rosh' : name.trim(),
-        price: price.replace(',', '.'),
+        name: isRoshCategory ? "Rosh" : name.trim(),
+        price: price.replace(",", "."),
         description: description.trim() || undefined,
-      })
-      setProducts((current) => [...current, product])
-      setName('')
-      setPrice('')
-      setDescription('')
-      setFlavorId('')
+      });
+      setProducts((current) => [...current, product]);
+      setName("");
+      setPrice("");
+      setDescription("");
+      setFlavorId("");
     } catch {
-      setError('Não foi possível criar o produto. Confira a categoria e o preço.')
+      setError(
+        "Não foi possível criar o produto. Confira a categoria e o preço.",
+      );
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
   }
 
   async function handleStatusChange(product: Product) {
-    setUpdatingId(product.id)
-    setError('')
+    setUpdatingId(product.id);
+    setError("");
     try {
-      const updatedProduct = await updateProductStatus(product.id, !product.active)
-      setProducts((current) => current.map((item) => item.id === product.id ? updatedProduct : item))
+      const updatedProduct = await updateProductStatus(
+        product.id,
+        !product.active,
+      );
+      setProducts((current) =>
+        current.map((item) => (item.id === product.id ? updatedProduct : item)),
+      );
     } catch {
-      setError('Não foi possível atualizar o status do produto.')
+      setError("Não foi possível atualizar o status do produto.");
     } finally {
-      setUpdatingId(null)
+      setUpdatingId(null);
     }
   }
 
   function startEditing(product: Product) {
-    setEditingId(product.id)
-    setEditName(product.name)
-    setEditPrice(product.price)
-    setEditDescription(product.description ?? '')
+    setEditingId(product.id);
+    setEditName(product.name);
+    setEditPrice(product.price);
+    setEditDescription(product.description ?? "");
   }
 
   async function saveProduct(product: Product) {
-    setUpdatingId(product.id)
-    setError('')
+    setUpdatingId(product.id);
+    setError("");
     try {
-      const updated = await updateProduct(product.id, { name: editName.trim(), price: editPrice.replace(',', '.'), description: editDescription.trim() || null })
-      setProducts((current) => current.map((item) => item.id === product.id ? updated : item))
-      setEditingId(null)
+      const updated = await updateProduct(product.id, {
+        name: editName.trim(),
+        price: editPrice.replace(",", "."),
+        description: editDescription.trim() || null,
+      });
+      setProducts((current) =>
+        current.map((item) => (item.id === product.id ? updated : item)),
+      );
+      setEditingId(null);
     } catch {
-      setError('Não foi possível salvar o produto.')
+      setError("Não foi possível salvar o produto.");
     } finally {
-      setUpdatingId(null)
+      setUpdatingId(null);
     }
   }
 
-  const inactiveCount = products.filter((product) => !product.active).length
-  const visibleProducts = showAll ? products : products.filter((product) => product.active)
-  const productsByCategory = useMemo(() => categories.map((category) => ({
-    category,
-    products: visibleProducts.filter((product) => product.category_id === category.id),
-  })).filter((group) => group.products.length > 0), [categories, visibleProducts])
-  const displayCategoryName = (category: Category) => category.name.toLowerCase() === 'essências' ? 'Rosh' : category.name
-  const isRoshCategory = categories.find((category) => category.id === categoryId)?.name.toLowerCase() === 'rosh'
-  const brandFlavors = flavors.filter((flavor) => flavor.brand_id === brandId)
+  const inactiveCount = products.filter((product) => !product.active).length;
+  const visibleProducts = showAll
+    ? products
+    : products.filter((product) => product.active);
+  const productsByCategory = useMemo(
+    () =>
+      categories
+        .map((category) => ({
+          category,
+          products: visibleProducts.filter(
+            (product) => product.category_id === category.id,
+          ),
+        }))
+        .filter((group) => group.products.length > 0),
+    [categories, visibleProducts],
+  );
+  const displayCategoryName = (category: Category) =>
+    category.name.toLowerCase() === "essências" ? "Rosh" : category.name;
+  const isRoshCategory =
+    categories
+      .find((category) => category.id === categoryId)
+      ?.name.toLowerCase() === "rosh";
+  const brandFlavors = flavors.filter((flavor) => flavor.brand_id === brandId);
 
   return (
     <section className="page-content simple-page products-page">
-      <div className="page-heading"><div><span className="eyebrow">Catálogo conectado</span><h1>Produtos</h1><p>Cadastre vários itens dentro de cada categoria.</p></div></div>
-      {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">Catálogo conectado</span>
+          <h1>Produtos</h1>
+          <p>Cadastre vários itens dentro de cada categoria.</p>
+        </div>
+      </div>
+      {error && (
+        <div className="api-error">
+          <AlertCircle size={16} />
+          {error}
+        </div>
+      )}
       <form className="resource-form product-form" onSubmit={handleSubmit}>
         <label htmlFor="product-category">Novo produto</label>
         <div className="product-form-grid">
-          <select id="product-category" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} disabled={categories.length === 0}>
-            {categories.length === 0 ? <option value="">Nenhuma categoria ativa</option> : categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          <select
+            id="product-category"
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+            disabled={categories.length === 0}
+          >
+            {categories.length === 0 ? (
+              <option value="">Nenhuma categoria ativa</option>
+            ) : (
+              categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))
+            )}
           </select>
-          {isRoshCategory ? <><select value={brandId} onChange={(event) => { setBrandId(event.target.value); setFlavorId('') }}><option value="">Selecione a marca</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select><select value={flavorId} onChange={(event) => setFlavorId(event.target.value)} disabled={!brandId}><option value="">Selecione o sabor</option>{brandFlavors.map((flavor) => <option key={flavor.id} value={flavor.id}>{flavor.name}</option>)}</select></> : <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ex.: Coca-Cola" maxLength={120} />}
-          <input value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Preço" inputMode="decimal" />
-          <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Descrição (opcional)" maxLength={500} />
-          <button className="primary-button resource-submit" type="submit" disabled={isSaving || !categoryId || (!isRoshCategory && !name.trim()) || (isRoshCategory && !flavorId) || !price}>
-            {isSaving ? <LoaderCircle className="spin" size={16} /> : <Plus size={16} />}
-            {isSaving ? 'Salvando...' : 'Adicionar produto'}
+          {isRoshCategory ? (
+            <>
+              <select
+                value={brandId}
+                onChange={(event) => {
+                  setBrandId(event.target.value);
+                  setFlavorId("");
+                }}
+              >
+                <option value="">Selecione a marca</option>
+                {brands.map((brand) => (
+                  <option key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={flavorId}
+                onChange={(event) => setFlavorId(event.target.value)}
+                disabled={!brandId}
+              >
+                <option value="">Selecione o sabor</option>
+                {brandFlavors.map((flavor) => (
+                  <option key={flavor.id} value={flavor.id}>
+                    {flavor.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Ex.: Coca-Cola"
+              maxLength={120}
+            />
+          )}
+          <input
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+            placeholder="Preço"
+            inputMode="decimal"
+          />
+          <input
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Descrição (opcional)"
+            maxLength={500}
+          />
+          <button
+            className="primary-button resource-submit"
+            type="submit"
+            disabled={
+              isSaving ||
+              !categoryId ||
+              (!isRoshCategory && !name.trim()) ||
+              (isRoshCategory && !flavorId) ||
+              !price
+            }
+          >
+            {isSaving ? (
+              <LoaderCircle className="spin" size={16} />
+            ) : (
+              <Plus size={16} />
+            )}
+            {isSaving ? "Salvando..." : "Adicionar produto"}
           </button>
         </div>
       </form>
       <div className="resource-list">
         <div className="resource-list-header">
-          <div><strong>{showAll ? 'Todos os produtos' : 'Produtos ativos'}</strong><span>{visibleProducts.length} registros</span></div>
-          <button className="resource-filter" type="button" onClick={() => setListOpen((current) => !current)}><ChevronDown size={14} />{listOpen ? 'Recolher' : 'Exibir'}</button>
-          {listOpen && <button className="resource-filter" type="button" onClick={() => setShowAll((current) => !current)} disabled={!showAll && inactiveCount === 0}>
-            {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
-            {showAll ? 'Ocultar inativos' : `Ver todos (${inactiveCount})`}
-          </button>}
-        </div>
-        {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : productsByCategory.length === 0 ? <div className="resource-state">Nenhum produto cadastrado ainda.</div> : productsByCategory.map(({ category, products: categoryProducts }) => (
-          <div className="product-category-group" key={category.id}>
-            <div className="product-category-heading"><h3>{displayCategoryName(category)}</h3><span>{categoryProducts.length} {categoryProducts.length === 1 ? 'item' : 'itens'}</span></div>
-            {categoryProducts.map((product) => editingId === product.id ? <article className="resource-row product-edit-row" key={product.id}><input value={editName} onChange={(event) => setEditName(event.target.value)} aria-label="Nome do produto" /><input value={editDescription} onChange={(event) => setEditDescription(event.target.value)} aria-label="Descrição do produto" /><input value={editPrice} onChange={(event) => setEditPrice(event.target.value)} aria-label="Preço do produto" inputMode="decimal" /><button className="icon-success" type="button" onClick={() => void saveProduct(product)} disabled={updatingId === product.id} aria-label="Salvar produto">{updatingId === product.id ? <LoaderCircle className="spin" size={16} /> : <Save size={16} />}</button><button className="icon-danger" type="button" onClick={() => setEditingId(null)} aria-label="Cancelar edição"><X size={16} /></button></article> : <article className="resource-row" key={product.id}><div><strong>{product.name}</strong><span className={product.active ? '' : 'status-inactive'}>{product.description || (product.active ? 'Sem descrição' : 'Inativo')}</span></div><b className="product-price">R$ {Number(product.price).toFixed(2).replace('.', ',')}</b><button className="icon-edit" type="button" onClick={() => startEditing(product)} aria-label={`Editar ${product.name}`}><Edit3 size={15} /></button><button className={product.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(product)} disabled={updatingId === product.id} aria-label={`${product.active ? 'Desativar' : 'Ativar'} ${product.name}`}>{updatingId === product.id ? <LoaderCircle className="spin" size={16} /> : product.active ? <CircleOff size={16} /> : <Check size={16} />}</button></article>)}
+          <div>
+            <strong>{showAll ? "Todos os produtos" : "Produtos ativos"}</strong>
+            <span>{visibleProducts.length} registros</span>
           </div>
-        )))}
+          <button
+            className="resource-filter"
+            type="button"
+            onClick={() => setListOpen((current) => !current)}
+          >
+            <ChevronDown size={14} />
+            {listOpen ? "Recolher" : "Exibir"}
+          </button>
+          {listOpen && (
+            <button
+              className="resource-filter"
+              type="button"
+              onClick={() => setShowAll((current) => !current)}
+              disabled={!showAll && inactiveCount === 0}
+            >
+              {showAll ? <EyeOff size={14} /> : <Eye size={14} />}
+              {showAll ? "Ocultar inativos" : `Ver todos (${inactiveCount})`}
+            </button>
+          )}
+        </div>
+        {listOpen &&
+          (isLoading ? (
+            <div className="resource-state">
+              <LoaderCircle className="spin" size={20} />
+              Carregando catálogo...
+            </div>
+          ) : productsByCategory.length === 0 ? (
+            <div className="resource-state">
+              Nenhum produto cadastrado ainda.
+            </div>
+          ) : (
+            productsByCategory.map(
+              ({ category, products: categoryProducts }) => (
+                <div className="product-category-group" key={category.id}>
+                  <div className="product-category-heading">
+                    <h3>{displayCategoryName(category)}</h3>
+                    <span>
+                      {categoryProducts.length}{" "}
+                      {categoryProducts.length === 1 ? "item" : "itens"}
+                    </span>
+                  </div>
+                  {categoryProducts.map((product) =>
+                    editingId === product.id ? (
+                      <article
+                        className="resource-row product-edit-row"
+                        key={product.id}
+                      >
+                        <input
+                          value={editName}
+                          onChange={(event) => setEditName(event.target.value)}
+                          aria-label="Nome do produto"
+                        />
+                        <input
+                          value={editDescription}
+                          onChange={(event) =>
+                            setEditDescription(event.target.value)
+                          }
+                          aria-label="Descrição do produto"
+                        />
+                        <input
+                          value={editPrice}
+                          onChange={(event) => setEditPrice(event.target.value)}
+                          aria-label="Preço do produto"
+                          inputMode="decimal"
+                        />
+                        <button
+                          className="icon-success"
+                          type="button"
+                          onClick={() => void saveProduct(product)}
+                          disabled={updatingId === product.id}
+                          aria-label="Salvar produto"
+                        >
+                          {updatingId === product.id ? (
+                            <LoaderCircle className="spin" size={16} />
+                          ) : (
+                            <Save size={16} />
+                          )}
+                        </button>
+                        <button
+                          className="icon-danger"
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          aria-label="Cancelar edição"
+                        >
+                          <X size={16} />
+                        </button>
+                      </article>
+                    ) : (
+                      <article
+                        className="resource-row"
+                        key={product.id}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <strong>{product.name}</strong>
+                          <span
+                            className={product.active ? "" : "status-inactive"}
+                            style={{ display: "block" }}
+                          >
+                            {product.description ||
+                              (product.active ? "Sem descrição" : "Inativo")}
+                          </span>
+                          <b
+                            className="product-price"
+                            style={{ display: "block", marginTop: "6px" }}
+                          >
+                            R${" "}
+                            {Number(product.price).toFixed(2).replace(".", ",")}
+                          </b>
+                        </div>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            className="icon-edit"
+                            type="button"
+                            onClick={() => startEditing(product)}
+                            aria-label={`Editar ${product.name}`}
+                          >
+                            <Edit3 size={15} />
+                          </button>
+                          <button
+                            className={
+                              product.active ? "icon-danger" : "icon-success"
+                            }
+                            type="button"
+                            onClick={() => void handleStatusChange(product)}
+                            disabled={updatingId === product.id}
+                            aria-label={`${product.active ? "Desativar" : "Ativar"} ${product.name}`}
+                          >
+                            {updatingId === product.id ? (
+                              <LoaderCircle className="spin" size={16} />
+                            ) : product.active ? (
+                              <CircleOff size={16} />
+                            ) : (
+                              <Check size={16} />
+                            )}
+                          </button>
+                        </div>
+                      </article>
+                    ),
+                  )}
+                </div>
+              ),
+            )
+          ))}
       </div>
     </section>
-  )
+  );
 }
