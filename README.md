@@ -24,7 +24,7 @@ alembic upgrade head                 # cria ou atualiza o schema
 python -m scripts.seed_catalog --with-menu  # cardápio base (banco novo; idempotente)
 python -m scripts.backfill_images    # liga as imagens ao banco
 python -m scripts.create_admin --email voce@lounge.com --name "Seu nome"
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000 --timeout-graceful-shutdown 3
 ```
 
 Documentação interativa: http://localhost:8000/docs (desligada em produção).

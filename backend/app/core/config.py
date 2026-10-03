@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed browser origins.
     frontend_url: str = "http://localhost:5173"
     app_base_url: str = "http://localhost:8000"
+    # Off: customer orders go straight to the lounge queue and are paid in person.
+    online_payments_enabled: bool = False
     mercado_pago_access_token: str = ""
     mercado_pago_public_key: str = ""
     mercado_pago_webhook_secret: str = ""

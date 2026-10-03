@@ -29,6 +29,7 @@ import { getProducts, type Product } from '../../services/products'
 import {
   createPublicOrder,
   getPublicOrder,
+  getPublicConfig,
   getPublicOrderHistory,
   type PublicHistoryOrder,
   type PublicOrderResponse,
@@ -124,10 +125,12 @@ export function CustomerJourneyPage() {
   const [favorites, setFavorites] = useState<string[]>(() => readJson(FAVORITES_KEY, []))
   const [lastOrder, setLastOrder] = useState<CartItem[]>(() => readJson(LAST_ORDER_KEY, []))
   const [history, setHistory] = useState<PublicHistoryOrder[]>([])
+  const [onlinePayments, setOnlinePayments] = useState(false)
 
   useEffect(() => {
-    Promise.all([getBrands(), getFlavors(), getCategories(), getProducts()])
-      .then(([loadedBrands, loadedFlavors, loadedCategories, loadedProducts]) => {
+    Promise.all([getBrands(), getFlavors(), getCategories(), getProducts(), getPublicConfig()])
+      .then(([loadedBrands, loadedFlavors, loadedCategories, loadedProducts, config]) => {
+        setOnlinePayments(config.online_payments_enabled)
         setBrands(loadedBrands.filter((item) => item.active))
         setFlavors(loadedFlavors.filter((item) => item.active))
         setCategories(loadedCategories.filter((item) => item.active))
@@ -271,7 +274,7 @@ export function CustomerJourneyPage() {
       const created = await createPublicOrder({
         customer_name: name.trim(),
         customer_phone: phoneDigits,
-        payment_method: 'PIX',
+        payment_method: onlinePayments ? 'PIX' : 'CASH',
         items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })),
       })
       writeJson(LAST_ORDER_KEY, cart)
@@ -381,8 +384,11 @@ export function CustomerJourneyPage() {
                   {history.slice(0, 3).map((item) => (
                     <button key={item.order_number} onClick={() => restoreCart(item.items.map((entry) => ({ productId: entry.product_id, quantity: entry.quantity, notes: entry.notes ?? undefined })))}>
                       <History size={16} />
-                      <span>Pedido #{item.order_number} · {formatMoney(item.total)}</span>
-                      <RotateCcw size={15} />
+                      <span>
+                        <strong>{item.items.map((entry) => `${entry.quantity}x ${entry.product_name}`).join(', ')}</strong>
+                        <small>{new Date(item.created_at).toLocaleDateString('pt-BR')} · {formatMoney(item.total)}</small>
+                      </span>
+                      <RotateCcw size={15} aria-label="Pedir de novo" />
                     </button>
                   ))}
                 </div>
@@ -568,10 +574,12 @@ export function CustomerJourneyPage() {
         <section className="customer-panel">
           <button className="customer-back" onClick={() => setStep('customer')}><ArrowLeft size={16} /> Dados</button>
           <h2>Pagamento</h2>
-          <div className="payment-choice"><button className="active" disabled>PIX</button></div>
+          {onlinePayments
+            ? <div className="payment-choice"><button className="active" disabled>PIX</button></div>
+            : <p className="customer-muted">O pagamento é feito direto no lounge, com a nossa equipe, quando o pedido for entregue.</p>}
           <div className="customer-total">Total <strong>{formatMoney(total)}</strong></div>
           <button className="customer-primary" disabled={sending} onClick={() => void submit()}>
-            {sending ? 'Enviando...' : 'Ir para pagamento'} <Check size={16} />
+            {sending ? 'Enviando...' : onlinePayments ? 'Ir para pagamento' : 'Enviar pedido'} <Check size={16} />
           </button>
         </section>
       )}
@@ -606,7 +614,7 @@ export function CustomerJourneyPage() {
           <p>{statusCopy.text}</p>
           <strong>{formatMoney(order.total)}</strong>
           <div className="customer-status-track">
-            {STATUS_TRACK.map((item) => <span key={item.status} className={order.status === item.status ? 'active' : ''}>{item.label}</span>)}
+            {STATUS_TRACK.filter((item) => onlinePayments || item.status !== 'AWAITING_PAYMENT').map((item) => <span key={item.status} className={order.status === item.status ? 'active' : ''}>{item.label}</span>)}
           </div>
           <button className="customer-primary" type="button" onClick={startNewOrder}>Voltar ao início</button>
         </section>

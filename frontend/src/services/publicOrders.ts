@@ -37,7 +37,7 @@ export type PublicHistoryOrder = {
 export async function createPublicOrder(payload: {
   customer_name: string
   customer_phone: string
-  payment_method: 'PIX' | 'CARD'
+  payment_method: 'PIX' | 'CARD' | 'CASH'
   items: Array<{ product_id: string; quantity: number; notes?: string }>
 }) {
   const { data } = await api.post<PublicOrderResponse>('/public/orders', payload)
@@ -51,5 +51,10 @@ export async function getPublicOrder(publicToken: string) {
 
 export async function getPublicOrderHistory(phone: string) {
   const { data } = await api.get<PublicHistoryOrder[]>('/public/history', { params: { phone } })
+  return data
+}
+
+export async function getPublicConfig() {
+  const { data } = await api.get<{ online_payments_enabled: boolean }>('/public/config')
   return data
 }

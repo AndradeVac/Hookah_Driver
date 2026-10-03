@@ -16,7 +16,7 @@ from app.repositories.customer import CustomerRepository
 from app.repositories.order import OrderRepository
 from app.schemas.audit import PublicHistoryItem, PublicHistoryOrder
 from app.schemas.order import OrderCreate, OrderItemCreate
-from app.schemas.public_order import PublicOrderCreate, PublicOrderResponse, PublicOrderTracking
+from app.schemas.public_order import PublicConfig, PublicOrderCreate, PublicOrderResponse, PublicOrderTracking
 from app.services.order import OrderService
 from app.services.payment import PaymentGatewayError, PaymentService
 
@@ -72,6 +72,12 @@ async def public_order_socket(websocket: WebSocket, public_token: UUID):
         pass
 
 
+@router.get("/config", response_model=PublicConfig)
+def public_config():
+    """Settings the customer menu needs before checkout."""
+    return PublicConfig(online_payments_enabled=settings.online_payments_enabled)
+
+
 @router.post(
     "/orders",
     response_model=PublicOrderResponse,
@@ -86,11 +92,13 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
     elif customer.name != data.customer_name:
         customer.name = data.customer_name
 
-    online_payment = data.payment_method in (PaymentMethod.PIX, PaymentMethod.CARD)
+    # With online payments off, every customer order is paid in person at the lounge.
+    payment_method = data.payment_method if settings.online_payments_enabled else PaymentMethod.CASH
+    online_payment = payment_method in (PaymentMethod.PIX, PaymentMethod.CARD)
     order = OrderService(db).create(
         OrderCreate(
             customer_id=customer.id,
-            payment_method=data.payment_method,
+            payment_method=payment_method,
             items=[
                 OrderItemCreate(product_id=item.product_id, quantity=item.quantity, notes=item.notes)
                 for item in data.items
@@ -110,7 +118,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
 
     title = f"Pedido #{order.order_number} - Hookah Driver"
     try:
-        if data.payment_method is PaymentMethod.PIX:
+        if payment_method is PaymentMethod.PIX:
             pix = PaymentService().create_pix_payment(
                 order_id=str(order.id),
                 description=title,
@@ -123,7 +131,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
             db.commit()
             response.pix_qr_code = pix["qr_code"]
             response.pix_qr_code_base64 = pix["qr_code_base64"]
-        elif data.payment_method is PaymentMethod.CARD:
+        elif payment_method is PaymentMethod.CARD:
             checkout = PaymentService().create_checkout(
                 order_id=str(order.id),
                 title=title,
@@ -138,7 +146,7 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
     except PaymentGatewayError:
         # The order is kept (AWAITING_PAYMENT) so staff can see it and settle manually.
         db.rollback()
-        logger.exception("Could not start %s payment for order %s", data.payment_method.value, order.id)
+        logger.exception("Could not start %s payment for order %s", payment_method.value, order.id)
         response.payment_error = "Não foi possível gerar o pagamento agora. Avise a equipe do lounge."
 
     return response

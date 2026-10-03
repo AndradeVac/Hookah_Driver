@@ -65,3 +65,7 @@ class PublicOrderTracking(BaseModel):
     payment_status: str
     pix_qr_code: str | None = None
     pix_qr_code_base64: str | None = None
+
+
+class PublicConfig(BaseModel):
+    online_payments_enabled: bool

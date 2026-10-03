@@ -20,4 +20,4 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   CANCELLED: 'Cancelado',
 }
 
-export const paymentMethodLabels: Record<string, string> = { PIX: 'PIX', CARD: 'Cartão', CASH: 'Dinheiro' }
+export const paymentMethodLabels: Record<string, string> = { PIX: 'PIX', CARD: 'Cartão', CASH: 'Pagar no local' }

@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.order import Order
+from app.models.order import Order, OrderStatus
 
 _ORDER_LOAD_OPTIONS = (
     selectinload(Order.items),
@@ -39,10 +39,14 @@ class OrderRepository:
         return list(self.db.scalars(statement).all())
 
     def get_recent_by_customer(self, customer_id: UUID, limit: int) -> list[Order]:
+        """Orders that actually reached the lounge (never-paid and cancelled ones are left out)."""
         statement = (
             select(Order)
             .options(selectinload(Order.items))
-            .where(Order.customer_id == customer_id)
+            .where(
+                Order.customer_id == customer_id,
+                Order.status.not_in((OrderStatus.AWAITING_PAYMENT, OrderStatus.CANCELLED)),
+            )
             .order_by(Order.created_at.desc())
             .limit(limit)
         )
