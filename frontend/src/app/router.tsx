@@ -21,6 +21,7 @@ const ProductsPage = page(() => import('../features/products/ProductsPage'), 'Pr
 const UsersPage = page(() => import('../features/users/UsersPage'), 'UsersPage')
 const AuditPage = page(() => import('../features/audit/AuditPage'), 'AuditPage')
 const CustomerJourneyPage = page(() => import('../features/customer/CustomerJourneyPage'), 'CustomerJourneyPage')
+const CreditsPage = page(() => import('../features/customer/CreditsPage'), 'CreditsPage')
 const CustomerQrScannerPage = page(() => import('../features/customer/CustomerQrScannerPage'), 'CustomerQrScannerPage')
 
 export function AppRouter() {
@@ -31,6 +32,7 @@ export function AppRouter() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/cliente" element={<CustomerJourneyPage />} />
           <Route path="/cliente/scan" element={<CustomerQrScannerPage />} />
+          <Route path="/creditos" element={<CreditsPage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
               <Route path="/orders" element={<OrdersPage />} />

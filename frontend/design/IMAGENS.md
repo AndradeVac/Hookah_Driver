@@ -30,6 +30,8 @@ Produtos ligados a um sabor (Rosh) usam automaticamente a imagem do sabor.
    ```
    Para uma pasta inteira: `python design/optimize_photo.py pasta/ public/images/essencias/ziggy/`
    (precisa `pip install pillow`).
+   Foto de cena (mão segurando, mesa, ambiente): use `--crop` para recortar um quadrado em vez de
+   adicionar bordas; `--focus 0.3` puxa o recorte para a esquerda. Categorias e marcas: `--size 512`.
 2. Atualize o banco (em `backend/`):
    ```
    python -m scripts.backfill_images --dry-run   # confere
@@ -43,6 +45,17 @@ Produtos ligados a um sabor (Rosh) usam automaticamente a imagem do sabor.
 
 `python design/generate_icons.py public/images` (em `frontend/`; precisa `pip install cairosvg pillow`)
 regenera os ícones. Quando existir foto real de um produto, basta sobrescrever o arquivo.
+
+## Fotos de terceiros (licença e créditos)
+
+Prefira fotos dos próprios produtos do lounge ou do fornecedor (com autorização).
+Fotos da internet só com licença que permita uso comercial (CC0, CC BY, CC BY-SA — ex.: Wikimedia
+Commons, Openverse). CC BY/BY-SA exigem crédito: adicione a foto em
+`src/features/customer/CreditsPage.tsx` (página `/creditos`). Nunca use fotos de lojas virtuais ou do Google
+Imagens sem autorização.
+
+Hoje usam fotos licenciadas: carvão, acender carvão, Coca, Monster, Água, banner do Rosh e as
+categorias Acessórios, Adicionais, Bebidas e Kits. O restante usa ícones até chegarem fotos reais.
 
 ## Regras
 

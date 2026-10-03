@@ -15,7 +15,7 @@ import {
   ShoppingBag,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { findRoshProduct, flavorNote, isRoshCategory } from '../../lib/catalog'
 import { formatMoney } from '../../lib/format'
@@ -619,6 +619,8 @@ export function CustomerJourneyPage() {
           <button className="customer-primary" type="button" onClick={startNewOrder}>Voltar ao início</button>
         </section>
       )}
+
+      {step === 'menu' && <Link className="customer-credits" to="/creditos">Créditos das imagens</Link>}
 
       {step !== 'register' && step !== 'success' && (
         <button className="customer-cart-button" onClick={() => setStep('cart')}>
