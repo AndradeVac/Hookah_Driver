@@ -54,8 +54,8 @@ class Backfill:
         self.changed = 0
         self.missing: list[str] = []
 
-    def assign(self, row, url: str | None, label: str, expected: str) -> None:
-        if url is None and row.active:
+    def assign(self, row, url: str | None, label: str, expected: str, visible: bool = True) -> None:
+        if url is None and row.active and visible:
             self.missing.append(f"{label}  (esperado: {expected}.webp)")
         if row.image_url != url:
             row.image_url = url
@@ -86,11 +86,12 @@ def main() -> int:
             report.assign(category, find_image(stem), f"Categoria {category.name}", stem)
 
         for flavor in db.query(Flavor).all():
-            brand_slug = slugify(brands[flavor.brand_id].name)
+            brand = brands[flavor.brand_id]
+            brand_slug = slugify(brand.name)
             stem = f"essencias/{brand_slug}/{brand_slug}-{slugify(flavor.name)}"
             url = find_image(stem)
             flavor_images[flavor.id] = url
-            report.assign(flavor, url, f"Sabor {brands[flavor.brand_id].name} {flavor.name}", stem)
+            report.assign(flavor, url, f"Sabor {brand.name} {flavor.name}", stem, visible=brand.active)
 
         for product in db.query(Product).all():
             category = categories[product.category_id]

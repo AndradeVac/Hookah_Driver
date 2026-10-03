@@ -21,7 +21,7 @@ python -m venv .venv
 pip install -r requirements-dev.txt
 copy .env.example .env.development   # e preencha DATABASE_URL / JWT_SECRET_KEY
 alembic upgrade head                 # cria ou atualiza o schema
-python -m scripts.seed_catalog       # cardápio base (idempotente)
+python -m scripts.seed_catalog --with-menu  # cardápio base (banco novo; idempotente)
 python -m scripts.backfill_images    # liga as imagens ao banco
 python -m scripts.create_admin --email voce@lounge.com --name "Seu nome"
 uvicorn app.main:app --reload --port 8000

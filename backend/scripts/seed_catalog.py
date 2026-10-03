@@ -1,12 +1,19 @@
-"""Create or update the base menu (categories, brands, flavors and products).
+"""Make sure every active flavor can be ordered, and optionally load the base menu.
 
-Idempotent: rows are matched by name and only created or updated, never removed
-or deactivated, so it is safe to run against a database already in use.
-Every active flavor in the database gets its own "Rosh" product, which is what the menu sells.
+Default: every active flavor (of an active brand) gets an active "Rosh" product —
+created if missing, reactivated if it exists but is inactive. That is what the
+customer menu sells when someone picks a flavor.
+
+--with-menu also creates the base categories, brands, flavors and products below.
+Use it to bootstrap an empty database; on a database already in use the menu is
+managed in the admin panel.
+
+Idempotent: rows are matched by name; nothing is ever removed or deactivated.
 
 Usage (from backend/):
-    python -m scripts.seed_catalog            # apply
-    python -m scripts.seed_catalog --dry-run  # show what would change
+    python -m scripts.seed_catalog --dry-run      # show what would change
+    python -m scripts.seed_catalog                # Rosh for every active flavor
+    python -m scripts.seed_catalog --with-menu    # + base menu (new databases)
 """
 from __future__ import annotations
 
@@ -124,7 +131,13 @@ class Seeder:
         statement = statement.where(
             Product.flavor_id == flavor.id if flavor is not None else Product.flavor_id.is_(None)
         )
-        if self.db.scalars(statement).first() is not None:
+        label = f"{name} · {flavor.name}" if flavor is not None else name
+        existing = self.db.scalars(statement.order_by(Product.active.desc())).first()
+        if existing is not None:
+            # A flavored product (Rosh) must be active for its active flavor to be orderable.
+            if flavor is not None and not existing.active:
+                existing.active = True
+                self.created.append(f"reativado {category.name} / {label}")
             return
         self.db.add(Product(
             category_id=category.id,
@@ -134,19 +147,19 @@ class Seeder:
             description=description,
             active=True,
         ))
-        label = f"{name} · {flavor.name}" if flavor is not None else name
         self.created.append(f"produto {category.name} / {label}")
 
-    def run(self) -> None:
-        for category_name, products in PRODUCTS.items():
-            category = self.category(category_name)
-            for name, price, description in products:
-                self.product(category, name, Decimal(price), description)
+    def run(self, with_menu: bool = False) -> None:
+        if with_menu:
+            for category_name, products in PRODUCTS.items():
+                category = self.category(category_name)
+                for name, price, description in products:
+                    self.product(category, name, Decimal(price), description)
 
-        for brand_name, flavor_names in FLAVORS.items():
-            brand = self.brand(brand_name)
-            for flavor_name in flavor_names:
-                self.flavor(brand, flavor_name)
+            for brand_name, flavor_names in FLAVORS.items():
+                brand = self.brand(brand_name)
+                for flavor_name in flavor_names:
+                    self.flavor(brand, flavor_name)
 
         # Every active flavor in the database (including ones added in the admin) needs its Rosh.
         rosh = self.category(ROSH_CATEGORY)
@@ -160,11 +173,12 @@ class Seeder:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="show changes without saving")
+    parser.add_argument("--with-menu", action="store_true", help="also create the base menu (new databases)")
     args = parser.parse_args()
 
     with SessionLocal() as db:
         seeder = Seeder(db)
-        seeder.run()
+        seeder.run(with_menu=args.with_menu)
         if args.dry_run:
             db.rollback()
         else:
@@ -172,7 +186,7 @@ def main() -> int:
 
     for item in seeder.created:
         print(f"  + {item}")
-    print(f"{len(seeder.created)} registro(s) {'seriam criados' if args.dry_run else 'criados'}.")
+    print(f"{len(seeder.created)} alteração(ões) {'seriam feitas' if args.dry_run else 'feitas'}.")
     return 0
 
 
