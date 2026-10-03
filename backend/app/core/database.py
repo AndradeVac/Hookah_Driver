@@ -1,5 +1,7 @@
+from collections.abc import Iterator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 
@@ -11,6 +13,7 @@ class Base(DeclarativeBase):
 engine = create_engine(
     settings.database_url,
     pool_pre_ping=True,
+    pool_recycle=1800,
 )
 
 
@@ -21,9 +24,8 @@ SessionLocal = sessionmaker(
 )
 
 
-def get_db():
+def get_db() -> Iterator[Session]:
     db = SessionLocal()
-
     try:
         yield db
     except Exception:

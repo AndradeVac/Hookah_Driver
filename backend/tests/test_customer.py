@@ -25,6 +25,9 @@ class FakeCustomerRepository:
             return self.customer
         return None
 
+    def get_by_id_any_status(self, customer_id):
+        return self.get_by_id(customer_id)
+
     def update(self, customer):
         return customer
 

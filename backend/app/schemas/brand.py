@@ -8,7 +8,7 @@ class BrandCreate(BaseModel):
     name: str = Field(
         ...,
         min_length=1,
-        max_length=100,
+        max_length=80,
     )
     image_url: str | None = None
 
@@ -17,7 +17,7 @@ class BrandUpdate(BaseModel):
     name: str | None = Field(
         default=None,
         min_length=1,
-        max_length=100,
+        max_length=80,
     )
 
     image_url: str | None = None

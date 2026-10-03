@@ -1,13 +1,9 @@
 import { AlertCircle, ArrowUpRight, BarChart3, ChartColumnBig, CreditCard, Flame, LoaderCircle, ShoppingCart, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { formatMoney, orderStatusLabels, paymentMethodLabels as paymentLabels } from '../../lib/format'
 import { downloadDashboardExport, getDashboardAnalytics, type AnalyticsPeriod, type DashboardAnalytics } from '../../services/analytics'
 
-function formatMoney(value: string) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
-}
-
-const statusLabels: Record<string, string> = { RECEIVED: 'Novos', PREPARING: 'Em preparo', READY: 'Prontos', FINISHED: 'Finalizados', CANCELLED: 'Cancelados' }
-const paymentLabels: Record<string, string> = { PIX: 'PIX', CARD: 'Cartão', CASH: 'Dinheiro' }
+const statusLabels: Record<string, string> = orderStatusLabels
 
 export function DashboardOverviewPage() {
   const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null)
@@ -20,6 +16,7 @@ export function DashboardOverviewPage() {
 
   useEffect(() => {
     setIsLoading(true)
+    setError('')
     getDashboardAnalytics(period, customStart ? `${customStart}T00:00:00Z` : undefined, customEnd ? `${customEnd}T23:59:59Z` : undefined).then(setAnalytics).catch(() => setError('Não foi possível carregar os indicadores.')).finally(() => setIsLoading(false))
   }, [period, customStart, customEnd])
 

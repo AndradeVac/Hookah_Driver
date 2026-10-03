@@ -10,7 +10,7 @@ from app.models.order import OrderStatus, PaymentMethod, PaymentStatus
 class OrderItemCreate(BaseModel):
     product_id: UUID
     quantity: int = Field(gt=0)
-    notes: str | None = None
+    notes: str | None = Field(default=None, max_length=300)
 
 
 class OrderCreate(BaseModel):
@@ -48,6 +48,7 @@ class OrderResponse(BaseModel):
     id: UUID
     order_number: int
     customer_id: UUID
+    customer_name: str | None = None
     status: OrderStatus
     payment_method: PaymentMethod
     payment_status: PaymentStatus
@@ -60,7 +61,6 @@ class OrderResponse(BaseModel):
     updated_at: datetime
     items: list[OrderItemResponse]
     status_history: list[OrderStatusHistoryResponse]
-
 
 
 class OrderStatusUpdate(BaseModel):

@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { logoImage } from '../../lib/images'
+import { apiErrorMessage } from '../../services/api'
 import { useAuth } from './AuthProvider'
 
 const schema = z.object({
@@ -26,8 +28,8 @@ export function LoginPage() {
       await login(values)
       const from = (location.state as { from?: string } | null)?.from ?? '/'
       navigate(from, { replace: true })
-    } catch {
-      setServerError('Não foi possível entrar. Confira seus dados e tente novamente.')
+    } catch (error) {
+      setServerError(apiErrorMessage(error, 'Não foi possível entrar. Confira seus dados e tente novamente.'))
     }
   }
 
@@ -39,7 +41,7 @@ export function LoginPage() {
       </section>
       <section className="login-panel">
         <div className="login-form-wrap">
-          <div className="login-brand"><img className="login-brand-logo" src="/images/logo.jpeg" alt="Hookah Drive" /></div>
+          <div className="login-brand"><img className="login-brand-logo" {...logoImage} /></div>
           <div className="login-heading"><span className="eyebrow">Acesso administrativo</span><h2>Bem-vindo de volta.</h2><p>Entre para acompanhar sua operação.</p></div>
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <label className="form-field"><span>E-mail</span><input type="email" placeholder="voce@lounge.com" autoComplete="email" {...register('username')} />{errors.username && <small className="field-error">{errors.username.message}</small>}</label>

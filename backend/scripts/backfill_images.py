@@ -1,13 +1,17 @@
-"""Backfill `image_url` on flavors and products from real image files.
+"""Point every `image_url` in the database to the standardized files in
+``frontend/public/images`` (see frontend/design/IMAGENS.md).
 
-Matches DB rows to files under ``frontend/public/images`` using a normalized
-kebab-case slug. Only sets ``image_url`` when a real file exists; rows without a
-matching file are reported so the missing images can be produced (never a
-generic fallback).
+Matching uses the same slug as the frontend (lowercase, no accents, a-z0-9-):
+    brands      -> marcas/<brand>.webp
+    categories  -> categorias/<category>.webp
+    flavors     -> essencias/<brand>/<brand>-<flavor>.webp
+    products    -> image of their flavor, else products/<category>/<product>.webp
+Rows without a matching file get ``image_url = NULL`` (the UI shows a neutral
+placeholder), so the database never points to files that do not exist.
 
 Usage (from backend/):
-    python -m scripts.backfill_images            # apply changes
     python -m scripts.backfill_images --dry-run  # report only
+    python -m scripts.backfill_images            # apply
 """
 from __future__ import annotations
 
@@ -22,148 +26,88 @@ from app.models.category import Category
 from app.models.flavor import Flavor
 from app.models.product import Product
 
-# backend/scripts/backfill_images.py -> repo root is two parents up.
-REPO_ROOT = Path(__file__).resolve().parents[2]
-IMAGES_ROOT = REPO_ROOT / "frontend" / "public" / "images"
-ESSENCIAS_DIR = IMAGES_ROOT / "essencias"
-PRODUCTS_DIR = IMAGES_ROOT / "products"
-MARCAS_DIR = IMAGES_ROOT / "marcas"
-CATEGORIAS_DIR = IMAGES_ROOT / "categorias"
+IMAGES_ROOT = Path(__file__).resolve().parents[2] / "frontend" / "public" / "images"
+IMAGE_EXTS = (".webp", ".svg", ".png", ".jpg", ".jpeg")
 
 
 def slugify(value: str) -> str:
-    """Lowercase, strip accents, collapse to kebab-case (a-z0-9-)."""
+    """Lowercase, strip accents, collapse everything else to single dashes."""
     text = unicodedata.normalize("NFKD", value)
-    text = "".join(ch for ch in text if not unicodedata.combining(ch))
-    text = text.lower()
-    out = []
-    for ch in text:
-        if ch.isalnum():
-            out.append(ch)
-        elif ch in " _-/":
-            out.append("-")
-    slug = "".join(out)
+    text = "".join(ch for ch in text if not unicodedata.combining(ch)).lower()
+    slug = "".join(ch if ch.isascii() and ch.isalnum() else "-" for ch in text)
     while "--" in slug:
         slug = slug.replace("--", "-")
     return slug.strip("-")
 
 
-def public_path(file: Path) -> str:
-    """Return the browser path (/images/...) for a file under IMAGES_ROOT."""
-    rel = file.relative_to(IMAGES_ROOT).as_posix()
-    return f"/images/{rel}"
+def find_image(relative_stem: str) -> str | None:
+    """Return the public path (/images/...) of the first existing file, preferring WebP."""
+    for ext in IMAGE_EXTS:
+        file = IMAGES_ROOT / f"{relative_stem}{ext}"
+        if file.is_file():
+            return f"/images/{relative_stem}{ext}"
+    return None
 
 
-def index_dir(directory: Path) -> dict[str, Path]:
-    """Map slugified file stem -> file path for every image in a directory tree."""
-    index: dict[str, Path] = {}
-    if not directory.exists():
-        return index
-    for file in directory.rglob("*"):
-        if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".svg"}:
-            index.setdefault(slugify(file.stem), file)
-    return index
+class Backfill:
+    def __init__(self) -> None:
+        self.changed = 0
+        self.missing: list[str] = []
+
+    def assign(self, row, url: str | None, label: str, expected: str) -> None:
+        if url is None and row.active:
+            self.missing.append(f"{label}  (esperado: {expected}.webp)")
+        if row.image_url != url:
+            row.image_url = url
+            self.changed += 1
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="report only, do not write")
     args = parser.parse_args()
 
-    essencias = index_dir(ESSENCIAS_DIR)
-    products_idx = index_dir(PRODUCTS_DIR)
-    marcas_idx = index_dir(MARCAS_DIR)
-    categorias_idx = index_dir(CATEGORIAS_DIR)
+    if not IMAGES_ROOT.is_dir():
+        print(f"Pasta de imagens não encontrada: {IMAGES_ROOT}")
+        return 1
 
-    db = SessionLocal()
-    matched_flavors = 0
-    matched_products = 0
-    matched_brands = 0
-    matched_categories = 0
-    missing_flavors: list[str] = []
-    missing_products: list[str] = []
-    missing_brands: list[str] = []
-    missing_categories: list[str] = []
+    report = Backfill()
+    with SessionLocal() as db:
+        brands = {brand.id: brand for brand in db.query(Brand).all()}
+        categories = {category.id: category for category in db.query(Category).all()}
+        flavor_images: dict = {}
 
-    try:
-        brands = {b.id: b.name for b in db.query(Brand).all()}
+        for brand in brands.values():
+            stem = f"marcas/{slugify(brand.name)}"
+            report.assign(brand, find_image(stem), f"Marca {brand.name}", stem)
 
-        # --- Brands: {brand} in marcas/ ---
-        for brand in db.query(Brand).all():
-            file = marcas_idx.get(slugify(brand.name))
-            if file is not None:
-                brand.image_url = public_path(file)
-                matched_brands += 1
-            else:
-                missing_brands.append(f"{brand.name}  (esperado: marcas/{slugify(brand.name)}.png)")
+        for category in categories.values():
+            stem = f"categorias/{slugify(category.name)}"
+            report.assign(category, find_image(stem), f"Categoria {category.name}", stem)
 
-        # --- Flavors: {brand}-{flavor} in essencias ---
         for flavor in db.query(Flavor).all():
-            brand_name = brands.get(flavor.brand_id, "")
-            key = f"{slugify(brand_name)}-{slugify(flavor.name)}"
-            file = essencias.get(key)
-            if file is None:
-                # fall back to bare flavor slug (some files omit the brand)
-                file = essencias.get(slugify(flavor.name))
-            if file is not None:
-                flavor.image_url = public_path(file)
-                matched_flavors += 1
-            else:
-                missing_flavors.append(f"{brand_name} / {flavor.name}  (esperado: {key}.png)")
-
-        # --- Products: match by normalized name across products/ tree ---
-        categories = {c.id: c.name for c in db.query(Category).all()}
-
-        # --- Categories: {category} in categorias/ ---
-        for category in db.query(Category).all():
-            file = categorias_idx.get(slugify(category.name))
-            if file is not None:
-                category.image_url = public_path(file)
-                matched_categories += 1
-            else:
-                missing_categories.append(
-                    f"{category.name}  (esperado: categorias/{slugify(category.name)}.png)"
-                )
+            brand_slug = slugify(brands[flavor.brand_id].name)
+            stem = f"essencias/{brand_slug}/{brand_slug}-{slugify(flavor.name)}"
+            url = find_image(stem)
+            flavor_images[flavor.id] = url
+            report.assign(flavor, url, f"Sabor {brands[flavor.brand_id].name} {flavor.name}", stem)
 
         for product in db.query(Product).all():
-            file = products_idx.get(slugify(product.name))
-            if file is not None:
-                product.image_url = public_path(file)
-                matched_products += 1
-            else:
-                cat = categories.get(product.category_id, "")
-                missing_products.append(f"{cat} / {product.name}")
+            category = categories[product.category_id]
+            stem = f"products/{slugify(category.name)}/{slugify(product.name)}"
+            url = flavor_images.get(product.flavor_id) if product.flavor_id else None
+            report.assign(product, url or find_image(stem), f"Produto {category.name} / {product.name}", stem)
 
         if args.dry_run:
             db.rollback()
         else:
             db.commit()
-    finally:
-        db.close()
 
-    print("=" * 60)
-    print(f"Brands     com imagem: {matched_brands} | sem imagem: {len(missing_brands)}")
-    print(f"Categories com imagem: {matched_categories} | sem imagem: {len(missing_categories)}")
-    print(f"Flavors    com imagem: {matched_flavors} | sem imagem: {len(missing_flavors)}")
-    print(f"Products   com imagem: {matched_products} | sem imagem: {len(missing_products)}")
-    if missing_brands:
-        print("\n[FALTAM] Marcas sem imagem real:")
-        for item in sorted(missing_brands):
+    print(f"{report.changed} registro(s) {'seriam alterados' if args.dry_run else 'alterados'}.")
+    if report.missing:
+        print("\nItens ativos sem imagem (o app mostra o placeholder):")
+        for item in sorted(set(report.missing)):
             print(f"  - {item}")
-    if missing_categories:
-        print("\n[FALTAM] Categorias sem imagem real:")
-        for item in sorted(missing_categories):
-            print(f"  - {item}")
-    if missing_flavors:
-        print("\n[FALTAM] Sabores sem imagem real:")
-        for item in sorted(missing_flavors):
-            print(f"  - {item}")
-    if missing_products:
-        print("\n[FALTAM] Produtos sem imagem real:")
-        for item in sorted(missing_products):
-            print(f"  - {item}")
-    print("=" * 60)
-    print("(dry-run, nada gravado)" if args.dry_run else "Alterações gravadas no banco.")
     return 0
 
 

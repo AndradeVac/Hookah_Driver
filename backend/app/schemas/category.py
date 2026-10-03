@@ -1,17 +1,17 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CategoryCreate(BaseModel):
-    name: str
-    image_url: str | None = None
+    name: str = Field(min_length=1, max_length=80)
+    image_url: str | None = Field(default=None, max_length=300)
 
 
 class CategoryUpdate(BaseModel):
-    name: str | None = None
-    image_url: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    image_url: str | None = Field(default=None, max_length=300)
     active: bool | None = None
 
 

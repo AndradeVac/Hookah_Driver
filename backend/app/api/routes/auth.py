@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.rate_limit import login_rate_limit
 from app.core.security import create_access_token, get_current_user
 from app.models.user import User
 from app.schemas.user import TokenResponse, UserResponse
@@ -15,7 +16,7 @@ router = APIRouter(
 )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(login_rate_limit)])
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),

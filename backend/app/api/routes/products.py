@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -30,16 +30,7 @@ def create_product(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    service = ProductService(db)
-
-    try:
-        return service.create(data)
-
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        )
+    return ProductService(db).create(data)
 
 
 @router.get(
@@ -49,9 +40,7 @@ def create_product(
 def get_products(
     db: Session = Depends(get_db),
 ):
-    service = ProductService(db)
-
-    return service.get_all()
+    return ProductService(db).get_all()
 
 
 @router.get(
@@ -62,16 +51,7 @@ def get_product(
     product_id: UUID,
     db: Session = Depends(get_db),
 ):
-    service = ProductService(db)
-
-    try:
-        return service.get_by_id(product_id)
-
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        )
+    return ProductService(db).get_by_id(product_id)
 
 
 @router.patch(
@@ -84,19 +64,7 @@ def update_product(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    service = ProductService(db)
-
-    try:
-        return service.update(
-            product_id,
-            data,
-        )
-
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        )
+    return ProductService(db).update(product_id, data)
 
 
 @router.delete(
@@ -108,13 +76,4 @@ def delete_product(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    service = ProductService(db)
-
-    try:
-        return service.delete(product_id)
-
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        )
+    return ProductService(db).delete(product_id)

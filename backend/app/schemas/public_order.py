@@ -1,8 +1,19 @@
+import re
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.order import PaymentMethod
+
+
+def normalize_phone(value: str) -> str:
+    """Keep digits only, so "(11) 99999-9999" and "11999999999" are the same customer."""
+    digits = re.sub(r"\D", "", value)
+    if digits.startswith("55") and len(digits) in (12, 13):
+        digits = digits[2:]
+    if len(digits) not in (10, 11):
+        raise ValueError("Informe um telefone válido com DDD.")
+    return digits
 
 
 class PublicOrderItem(BaseModel):
@@ -12,10 +23,23 @@ class PublicOrderItem(BaseModel):
 
 
 class PublicOrderCreate(BaseModel):
-    customer_name: str = Field(min_length=2, max_length=150)
-    customer_phone: str = Field(pattern=r"^\+?[0-9\s().-]{10,20}$")
+    customer_name: str = Field(min_length=2, max_length=120)
+    customer_phone: str = Field(min_length=10, max_length=20)
     payment_method: PaymentMethod = PaymentMethod.PIX
     items: list[PublicOrderItem] = Field(min_length=1, max_length=30)
+
+    @field_validator("customer_name")
+    @classmethod
+    def _strip_name(cls, value: str) -> str:
+        value = " ".join(value.split())
+        if len(value) < 2:
+            raise ValueError("Informe seu nome.")
+        return value
+
+    @field_validator("customer_phone")
+    @classmethod
+    def _normalize_phone(cls, value: str) -> str:
+        return normalize_phone(value)
 
 
 class PublicOrderResponse(BaseModel):
@@ -30,7 +54,7 @@ class PublicOrderResponse(BaseModel):
     mercado_pago_public_key: str | None = None
     pix_qr_code: str | None = None
     pix_qr_code_base64: str | None = None
-
+    payment_error: str | None = None
 
 
 class PublicOrderTracking(BaseModel):

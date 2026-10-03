@@ -15,7 +15,6 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.models.brand import Brand
 
 
 class Flavor(Base):
@@ -33,7 +32,7 @@ class Flavor(Base):
 
     brand_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("brands.id", name="fk_flavors_brand", ondelete="RESTRICT"),
+        ForeignKey("brands.id", name="fk_flavors_brand", ondelete="CASCADE"),
         nullable=False,
     )
 

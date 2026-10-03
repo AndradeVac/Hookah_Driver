@@ -22,6 +22,10 @@ from app.schemas.analytics import (
 )
 
 
+# Orders that never became sales: not paid yet, or cancelled.
+_EXCLUDED_STATUSES = (OrderStatus.AWAITING_PAYMENT, OrderStatus.CANCELLED)
+
+
 class AnalyticsService:
     def __init__(self, db: Session):
         self.db = db
@@ -46,9 +50,9 @@ class AnalyticsService:
 
     def _filters(self, period: str, custom_start: datetime | None = None, custom_end: datetime | None = None):
         if custom_start is not None and custom_end is not None:
-            return [Order.status != OrderStatus.CANCELLED, Order.created_at >= custom_start, Order.created_at < custom_end], custom_start, custom_end
+            return [Order.status.not_in(_EXCLUDED_STATUSES), Order.created_at >= custom_start, Order.created_at < custom_end], custom_start, custom_end
         start, end = self.period_bounds(period)
-        conditions = [Order.status != OrderStatus.CANCELLED]
+        conditions = [Order.status.not_in(_EXCLUDED_STATUSES)]
         if start is not None:
             conditions.append(Order.created_at >= start)
         if end is not None:
@@ -68,15 +72,18 @@ class AnalyticsService:
             ).where(*conditions)
         ).one()
 
+        # Grouped by catalog product, so every Rosh flavor counts as "Rosh"
+        # (the flavor breakdown is in `essences`).
         product_rows = self.db.execute(
             select(
-                OrderItem.product_name,
+                Product.name.label("product_name"),
                 func.sum(OrderItem.quantity).label("quantity"),
                 func.sum(OrderItem.total_price).label("revenue"),
             )
             .join(Order, Order.id == OrderItem.order_id)
+            .join(Product, Product.id == OrderItem.product_id)
             .where(*conditions)
-            .group_by(OrderItem.product_name)
+            .group_by(Product.name)
             .order_by(func.sum(OrderItem.quantity).desc())
             .limit(10)
         ).all()
@@ -128,7 +135,7 @@ class AnalyticsService:
         if start is not None and end is not None:
             duration = end - start
             previous_start = start - duration
-            previous_revenue = Decimal(self.db.scalar(select(func.coalesce(func.sum(Order.total), 0)).where(Order.status != OrderStatus.CANCELLED, Order.created_at >= previous_start, Order.created_at < start)) or 0)
+            previous_revenue = Decimal(self.db.scalar(select(func.coalesce(func.sum(Order.total), 0)).where(Order.status.not_in(_EXCLUDED_STATUSES), Order.created_at >= previous_start, Order.created_at < start)) or 0)
             if previous_revenue:
                 revenue_change_percent = ((Decimal(revenue) - previous_revenue) / previous_revenue * 100).quantize(Decimal("0.01"))
 

@@ -15,10 +15,10 @@ class Brand(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
-    UUID(as_uuid=True),
-    primary_key=True,
-    server_default=text("gen_random_uuid()"),
-)
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
 
     name: Mapped[str] = mapped_column(
         String,

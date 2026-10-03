@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
-import { api } from '../../services/api'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { toast } from 'sonner'
+import { api, SESSION_EXPIRED_EVENT, tokenStorage } from '../../services/api'
 import { login as loginRequest, logout as clearSession, type LoginPayload } from '../../services/auth'
 
 export type AuthUser = {
@@ -25,8 +26,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('hookah-driver-token')
-    if (!token) {
+    if (!tokenStorage.get()) {
       setIsLoading(false)
       return
     }
@@ -37,16 +37,25 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .finally(() => setIsLoading(false))
   }, [])
 
-  async function login(payload: LoginPayload) {
+  useEffect(() => {
+    function handleExpired() {
+      toast.warning('Sua sessão expirou. Entre novamente.')
+      setUser(null)
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleExpired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleExpired)
+  }, [])
+
+  const login = useCallback(async (payload: LoginPayload) => {
     await loginRequest(payload)
     const { data } = await api.get<AuthUser>('/auth/me')
     setUser(data)
-  }
+  }, [])
 
-  function logout() {
+  const logout = useCallback(() => {
     clearSession()
     setUser(null)
-  }
+  }, [])
 
   const value = useMemo(() => ({
     user,
@@ -54,7 +63,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     isAuthenticated: Boolean(user),
     login,
     logout,
-  }), [user, isLoading])
+  }), [user, isLoading, login, logout])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

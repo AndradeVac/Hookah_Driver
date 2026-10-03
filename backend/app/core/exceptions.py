@@ -1,6 +1,10 @@
+import logging
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger(__name__)
 
 
 class NotFoundError(ValueError):
@@ -15,61 +19,43 @@ class AuthenticationError(ValueError):
     pass
 
 
-def register_exception_handlers(app: FastAPI):
+# Unique constraint name -> message shown to the user.
+_CONFLICT_MESSAGES = {
+    "brands_name_key": "Já existe uma marca com esse nome.",
+    "categories_name_key": "Já existe uma categoria com esse nome.",
+    "uq_flavor_brand": "Já existe um sabor com esse nome nesta marca.",
+    "users_email_key": "Já existe um usuário com esse e-mail.",
+}
+
+
+def _error(status_code: int, detail: str, headers: dict[str, str] | None = None) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content={"detail": detail}, headers=headers)
+
+
+def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(AuthenticationError)
-    async def authentication_handler(
-        request: Request,
-        exc: AuthenticationError,
-    ):
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": str(exc)},
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    async def authentication_handler(request: Request, exc: AuthenticationError):
+        return _error(status.HTTP_401_UNAUTHORIZED, str(exc), {"WWW-Authenticate": "Bearer"})
 
     @app.exception_handler(BusinessRuleError)
-    async def business_rule_handler(
-        request: Request,
-        exc: BusinessRuleError,
-    ):
-        return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            content={
-                "detail": str(exc),
-            },
-        )
+    async def business_rule_handler(request: Request, exc: BusinessRuleError):
+        return _error(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc))
 
     @app.exception_handler(NotFoundError)
-    async def not_found_handler(
-        request: Request,
-        exc: NotFoundError,
-    ):
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={
-                "detail": str(exc),
-            },
-        )
+    async def not_found_handler(request: Request, exc: NotFoundError):
+        return _error(status.HTTP_404_NOT_FOUND, str(exc))
 
     @app.exception_handler(IntegrityError)
-    async def integrity_error_handler(
-        request: Request,
-        exc: IntegrityError,
-    ):
+    async def integrity_error_handler(request: Request, exc: IntegrityError):
         error = str(exc.orig)
+        for constraint, message in _CONFLICT_MESSAGES.items():
+            if constraint in error:
+                return _error(status.HTTP_409_CONFLICT, message)
+        logger.warning("Integrity error on %s %s: %s", request.method, request.url.path, error)
+        return _error(status.HTTP_409_CONFLICT, "Não foi possível concluir a operação por conflito de dados.")
 
-        if "brands_name_key" in error:
-            return JSONResponse(
-                status_code=status.HTTP_409_CONFLICT,
-                content={
-                    "detail": "Já existe uma marca com esse nome."
-                },
-            )
-
-        return JSONResponse(
-            status_code=status.HTTP_409_CONFLICT,
-            content={
-                "detail": "Não foi possível concluir a operação por conflito de dados."
-            },
-        )
+    @app.exception_handler(Exception)
+    async def unhandled_error_handler(request: Request, exc: Exception):
+        # The server logs the traceback itself; this only hides internals from the client.
+        return _error(status.HTTP_500_INTERNAL_SERVER_ERROR, "Erro interno. Tente novamente em instantes.")

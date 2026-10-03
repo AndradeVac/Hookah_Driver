@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -30,12 +30,7 @@ def create_flavor(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    service = FlavorService(db)
-
-    try:
-        return service.create(data)
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    return FlavorService(db).create(data)
 
 
 @router.get(
@@ -45,9 +40,7 @@ def create_flavor(
 def get_flavors(
     db: Session = Depends(get_db),
 ):
-    service = FlavorService(db)
-
-    return service.get_all()
+    return FlavorService(db).get_all()
 
 
 @router.get(
@@ -58,12 +51,7 @@ def get_flavor(
     flavor_id: UUID,
     db: Session = Depends(get_db),
 ):
-    service = FlavorService(db)
-
-    try:
-        return service.get_by_id(flavor_id)
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    return FlavorService(db).get_by_id(flavor_id)
 
 
 @router.patch(
@@ -76,12 +64,7 @@ def update_flavor(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    service = FlavorService(db)
-
-    try:
-        return service.update(flavor_id, data)
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    return FlavorService(db).update(flavor_id, data)
 
 
 @router.delete(
@@ -93,9 +76,4 @@ def delete_flavor(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    service = FlavorService(db)
-
-    try:
-        return service.delete(flavor_id)
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error))
+    return FlavorService(db).delete(flavor_id)

@@ -8,7 +8,6 @@ from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
 from app.models.product import Product
 from app.models.user import User
-from app.models.category import Category
 
 
 __all__ = [

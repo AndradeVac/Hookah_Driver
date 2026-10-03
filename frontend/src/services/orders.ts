@@ -1,13 +1,24 @@
 import { api } from './api'
-import type { OrderStatus } from '../types'
+import type { OrderStatus, PaymentMethod, PaymentStatus } from '../types'
+
+export type OrderItem = {
+  id: string
+  product_id: string
+  product_name: string
+  quantity: number
+  unit_price: string
+  total_price: string
+  notes: string | null
+}
 
 export type Order = {
   id: string
   order_number: number
   customer_id: string
+  customer_name: string | null
   status: OrderStatus
-  payment_method: 'PIX' | 'CARD' | 'CASH'
-  payment_status: 'PENDING' | 'PAID' | 'FAILED'
+  payment_method: PaymentMethod
+  payment_status: PaymentStatus
   paid_at: string | null
   mercado_pago_order_id: string | null
   mercado_pago_payment_id: string | null
@@ -15,14 +26,7 @@ export type Order = {
   total: string
   created_at: string
   updated_at: string
-  items: Array<{
-    product_id: string
-    product_name: string
-    quantity: number
-    unit_price: string
-    total_price: string
-    notes: string | null
-  }>
+  items: OrderItem[]
   status_history: Array<{
     status: OrderStatus
     changed_by_user_id: string | null
@@ -30,6 +34,8 @@ export type Order = {
     reason: string | null
   }>
 }
+
+export type NewOrderItem = { product_id: string; quantity: number; notes?: string }
 
 export async function getOrders() {
   const { data } = await api.get<Order[]>('/orders')
@@ -41,11 +47,7 @@ export async function getOrder(id: string) {
   return data
 }
 
-export async function createOrder(payload: {
-  customer_id: string
-  payment_method: 'PIX' | 'CARD' | 'CASH'
-  items: Array<{ product_id: string; quantity: number }>
-}) {
+export async function createOrder(payload: { customer_id: string; payment_method: PaymentMethod; items: NewOrderItem[] }) {
   const { data } = await api.post<Order>('/orders', payload)
   return data
 }

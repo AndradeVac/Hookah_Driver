@@ -1,18 +1,18 @@
 import { ArrowLeft, Check, LoaderCircle, Plus, Trash2 } from 'lucide-react'
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { findRoshProduct, flavorNote, isRoshCategory } from '../../lib/catalog'
+import { formatMoney } from '../../lib/format'
+import { apiErrorMessage } from '../../services/api'
 import { getBrands, type Brand } from '../../services/brands'
 import { getCategories, type Category } from '../../services/categories'
 import { getCustomers, type Customer } from '../../services/customers'
-import { createOrder } from '../../services/orders'
 import { getFlavors, type Flavor } from '../../services/flavors'
+import { createOrder } from '../../services/orders'
 import { getProducts, type Product } from '../../services/products'
+import type { PaymentMethod } from '../../types'
 
-type CartItem = { product: Product; quantity: number }
-
-function money(value: string) {
-  return `R$ ${Number(value).toFixed(2).replace('.', ',')}`
-}
+type CartItem = { key: string; product: Product; label: string; quantity: number; notes?: string }
 
 export function NewOrderPage() {
   const navigate = useNavigate()
@@ -22,7 +22,7 @@ export function NewOrderPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [flavors, setFlavors] = useState<Flavor[]>([])
   const [customerId, setCustomerId] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CARD' | 'CASH'>('PIX')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('PIX')
   const [categoryId, setCategoryId] = useState('')
   const [brandId, setBrandId] = useState('')
   const [flavorId, setFlavorId] = useState('')
@@ -34,34 +34,52 @@ export function NewOrderPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([getCustomers(), getProducts(), getCategories(), getBrands(), getFlavors()]).then(([loadedCustomers, loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {
-      const activeCustomers = loadedCustomers.filter((customer) => customer.active)
-      const activeProducts = loadedProducts.filter((product) => product.active)
-      setCustomers(activeCustomers)
-      setProducts(activeProducts)
-      const activeCategories = loadedCategories.filter((category) => category.active)
-      const activeBrands = loadedBrands.filter((brand) => brand.active)
-      const activeFlavors = loadedFlavors.filter((flavor) => flavor.active)
-      setCategories(activeCategories)
-      setBrands(activeBrands)
-      setFlavors(activeFlavors)
-      setCustomerId(activeCustomers[0]?.id ?? '')
-      setProductId(activeProducts[0]?.id ?? '')
-      setCategoryId(activeCategories[0]?.id ?? '')
-      setBrandId(activeBrands[0]?.id ?? '')
-      setFlavorId(activeFlavors.find((flavor) => flavor.brand_id === activeBrands[0]?.id)?.id ?? '')
-    }).catch(() => setError('Não foi possível carregar clientes e produtos.')).finally(() => setIsLoading(false))
+    Promise.all([getCustomers(), getProducts(), getCategories(), getBrands(), getFlavors()])
+      .then(([loadedCustomers, loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {
+        const activeCategories = loadedCategories.filter((category) => category.active)
+        setCustomers(loadedCustomers.filter((customer) => customer.active))
+        setProducts(loadedProducts.filter((product) => product.active))
+        setCategories(activeCategories)
+        setBrands(loadedBrands.filter((brand) => brand.active))
+        setFlavors(loadedFlavors.filter((flavor) => flavor.active))
+        setCategoryId(activeCategories[0]?.id ?? '')
+      })
+      .catch(() => setError('Não foi possível carregar clientes e produtos.'))
+      .finally(() => setIsLoading(false))
   }, [])
 
-  function addProduct(event: FormEvent<HTMLFormElement>) {
+  const selectedCategory = categories.find((category) => category.id === categoryId)
+  const roshSelected = isRoshCategory(selectedCategory)
+  const brandFlavors = flavors.filter((flavor) => flavor.brand_id === brandId)
+  const selectedFlavor = brandFlavors.find((flavor) => flavor.id === flavorId)
+  const rosh = selectedFlavor ? findRoshProduct(products, categories, selectedFlavor) : null
+  const total = useMemo(() => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0), [cart])
+
+  function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const selectedProductId = isRoshCategory ? selectedBrandProduct?.id : productId
-    const product = products.find((item) => item.id === selectedProductId)
-    const amount = Math.max(1, Number(quantity) || 1)
-    if (!product) return
+    const amount = Math.max(1, Math.floor(Number(quantity)) || 1)
+    let item: Omit<CartItem, 'quantity'> | null = null
+
+    if (roshSelected && selectedFlavor && rosh) {
+      const brand = brands.find((entry) => entry.id === selectedFlavor.brand_id)
+      item = {
+        key: `${rosh.product.id}:${selectedFlavor.id}`,
+        product: rosh.product,
+        label: `${rosh.product.name} · ${brand?.name ?? ''} ${selectedFlavor.name}`.trim(),
+        notes: rosh.exact ? undefined : flavorNote(brand, selectedFlavor),
+      }
+    } else if (!roshSelected) {
+      const product = products.find((entry) => entry.id === productId)
+      if (product) item = { key: product.id, product, label: product.name }
+    }
+    if (!item) return
+
+    const newItem = item
     setCart((current) => {
-      const existing = current.find((item) => item.product.id === product.id)
-      return existing ? current.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + amount } : item) : [...current, { product, quantity: amount }]
+      const existing = current.find((entry) => entry.key === newItem.key)
+      return existing
+        ? current.map((entry) => entry.key === newItem.key ? { ...entry, quantity: entry.quantity + amount } : entry)
+        : [...current, { ...newItem, quantity: amount }]
     })
     setQuantity('1')
   }
@@ -71,23 +89,22 @@ export function NewOrderPage() {
     setIsSaving(true)
     setError('')
     try {
-      const order = await createOrder({ customer_id: customerId, payment_method: paymentMethod, items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity })) })
+      const order = await createOrder({
+        customer_id: customerId,
+        payment_method: paymentMethod,
+        items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })),
+      })
       navigate(`/orders/${order.id}`)
-    } catch {
-      setError('Não foi possível criar o pedido. Confira os dados selecionados.')
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Não foi possível criar o pedido. Confira os dados selecionados.'))
     } finally {
       setIsSaving(false)
     }
   }
 
-  const total = useMemo(() => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0), [cart])
-  const selectedCategory = categories.find((category) => category.id === categoryId)
-  const isRoshCategory = selectedCategory?.name.toLowerCase() === 'essências' || selectedCategory?.name.toLowerCase() === 'rosh'
-  const brandFlavors = flavors.filter((flavor) => flavor.brand_id === brandId)
-  const selectedBrandProduct = products.find((product) => product.category_id === categoryId && brandFlavors.some((flavor) => flavor.id === product.flavor_id))
-  const displayCategoryName = (category: Category) => category.name.toLowerCase() === 'essências' ? 'Rosh' : category.name
-
   if (isLoading) return <div className="auth-loading"><LoaderCircle className="spin" size={20} />Carregando dados...</div>
+
+  const canAdd = roshSelected ? Boolean(rosh) : Boolean(productId)
 
   return <section className="page-content simple-page new-order-page">
     <button className="back-link" type="button" onClick={() => navigate('/orders')}><ArrowLeft size={16} /> Voltar para pedidos</button>
@@ -96,16 +113,50 @@ export function NewOrderPage() {
     <div className="new-order-grid">
       <article className="resource-form">
         <label htmlFor="order-customer">Cliente</label>
-        <select id="order-customer" className="new-order-select" value={customerId} onChange={(event) => setCustomerId(event.target.value)}><option value="">Selecione um cliente</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} {customer.phone ? `· ${customer.phone}` : ''}</option>)}</select>
+        <select id="order-customer" className="new-order-select" value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+          <option value="">Selecione um cliente</option>
+          {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</option>)}
+        </select>
         <label htmlFor="order-category">Adicionar item</label>
-        <select id="order-category" className="new-order-select" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setProductId('') }}>{categories.map((category) => <option key={category.id} value={category.id}>{displayCategoryName(category)}</option>)}</select>
-        {isRoshCategory ? <div className="new-order-essence-fields"><select className="new-order-select" value={brandId} onChange={(event) => { setBrandId(event.target.value); setFlavorId(brandFlavors.find((flavor) => flavor.brand_id === event.target.value)?.id ?? '') }}><option value="">Selecione a marca</option>{brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select><select className="new-order-select" value={flavorId} onChange={(event) => setFlavorId(event.target.value)} disabled={!brandId}><option value="">Selecione o sabor</option>{brandFlavors.map((flavor) => <option key={flavor.id} value={flavor.id}>{flavor.name}</option>)}</select></div> : <select id="order-product" className="new-order-select" value={productId} onChange={(event) => setProductId(event.target.value)}><option value="">Selecione um produto</option>{products.filter((product) => product.category_id === categoryId).map((product) => <option key={product.id} value={product.id}>{product.name} · {money(product.price)}</option>)}</select>}
-        {isRoshCategory && <small className="new-order-hint">{selectedBrandProduct ? `Rosh · ${money(selectedBrandProduct.price)} por unidade` : 'Esta marca ainda não possui um Rosh cadastrado.'}</small>}
-        <form className="new-order-item-form" onSubmit={addProduct}><input type="number" min="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantidade" /><button className="icon-success" type="submit" aria-label="Adicionar item" disabled={isRoshCategory ? !selectedBrandProduct || !flavorId : !productId}><Plus size={17} /></button></form>
+        <select id="order-category" className="new-order-select" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setProductId('') }}>
+          {categories.map((category) => <option key={category.id} value={category.id}>{isRoshCategory(category) ? 'Rosh' : category.name}</option>)}
+        </select>
+        {roshSelected ? <div className="new-order-essence-fields">
+          <select className="new-order-select" value={brandId} onChange={(event) => { setBrandId(event.target.value); setFlavorId('') }} aria-label="Marca">
+            <option value="">Selecione a marca</option>
+            {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+          </select>
+          <select className="new-order-select" value={flavorId} onChange={(event) => setFlavorId(event.target.value)} disabled={!brandId} aria-label="Sabor">
+            <option value="">Selecione o sabor</option>
+            {brandFlavors.map((flavor) => <option key={flavor.id} value={flavor.id}>{flavor.name}</option>)}
+          </select>
+        </div> : <select id="order-product" className="new-order-select" value={productId} onChange={(event) => setProductId(event.target.value)}>
+          <option value="">Selecione um produto</option>
+          {products.filter((product) => product.category_id === categoryId).map((product) => <option key={product.id} value={product.id}>{product.name} · {formatMoney(product.price)}</option>)}
+        </select>}
+        {roshSelected && selectedFlavor && <small className="new-order-hint">{rosh ? `Rosh · ${formatMoney(rosh.product.price)} por unidade` : 'Este sabor ainda não possui um Rosh cadastrado.'}</small>}
+        <form className="new-order-item-form" onSubmit={addItem}>
+          <input type="number" min="1" max="20" value={quantity} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantidade" />
+          <button className="icon-success" type="submit" aria-label="Adicionar item" disabled={!canAdd}><Plus size={17} /></button>
+        </form>
         <label htmlFor="order-payment">Pagamento</label>
-        <select id="order-payment" className="new-order-select" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as typeof paymentMethod)}><option value="PIX">PIX</option><option value="CARD">Cartão</option><option value="CASH">Dinheiro</option></select>
+        <select id="order-payment" className="new-order-select" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
+          <option value="PIX">PIX</option>
+          <option value="CARD">Cartão</option>
+          <option value="CASH">Dinheiro</option>
+        </select>
       </article>
-      <article className="resource-list order-summary-panel"><div className="resource-list-header"><div><strong>Resumo do pedido</strong><span>{cart.length} itens diferentes</span></div></div>{cart.length === 0 ? <div className="resource-state">Adicione produtos ao pedido.</div> : <>{cart.map((item) => <div className="resource-row" key={item.product.id}><div><strong>{item.quantity}x {item.product.name}</strong><span>{money(item.product.price)} cada</span></div><div className="order-summary-actions"><b>{money((Number(item.product.price) * item.quantity).toFixed(2))}</b><button className="icon-danger" type="button" onClick={() => setCart((current) => current.filter((entry) => entry.product.id !== item.product.id))} aria-label={`Remover ${item.product.name}`}><Trash2 size={15} /></button></div></div>)}<div className="new-order-total"><span>Total</span><strong>{money(total.toFixed(2))}</strong></div><button className="primary-button detail-action" type="button" disabled={isSaving || !customerId || cart.length === 0} onClick={() => void submitOrder()}>{isSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}{isSaving ? 'Enviando...' : 'Criar pedido'}</button></>}</article>
+      <article className="resource-list order-summary-panel">
+        <div className="resource-list-header"><div><strong>Resumo do pedido</strong><span>{cart.length} {cart.length === 1 ? 'item' : 'itens diferentes'}</span></div></div>
+        {cart.length === 0 ? <div className="resource-state">Adicione produtos ao pedido.</div> : <>
+          {cart.map((item) => <div className="resource-row" key={item.key}>
+            <div><strong>{item.quantity}x {item.label}</strong><span>{formatMoney(item.product.price)} cada</span></div>
+            <div className="order-summary-actions"><b>{formatMoney(Number(item.product.price) * item.quantity)}</b><button className="icon-danger" type="button" onClick={() => setCart((current) => current.filter((entry) => entry.key !== item.key))} aria-label={`Remover ${item.label}`}><Trash2 size={15} /></button></div>
+          </div>)}
+          <div className="new-order-total"><span>Total</span><strong>{formatMoney(total)}</strong></div>
+          <button className="primary-button detail-action" type="button" disabled={isSaving || !customerId || cart.length === 0} onClick={() => void submitOrder()}>{isSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}{isSaving ? 'Enviando...' : 'Criar pedido'}</button>
+        </>}
+      </article>
     </div>
   </section>
 }

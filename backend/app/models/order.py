@@ -21,7 +21,6 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.models.customer import Customer
 
 
 class OrderStatus(str, enum.Enum):
@@ -174,5 +173,9 @@ class Order(Base):
     status_history: Mapped[list["OrderStatusHistory"]] = relationship(
         "OrderStatusHistory",
         back_populates="order",
+        order_by="OrderStatusHistory.created_at",
     )
-    
+
+    @property
+    def customer_name(self) -> str | None:
+        return self.customer.name if self.customer is not None else None

@@ -7,8 +7,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.order import OrderStatus
-from app.models.user import User
-from app.models.order import Order
 
 
 class OrderStatusHistory(Base):

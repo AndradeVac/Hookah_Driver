@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { formatMoney } from "../../lib/format";
 import { getCategories, type Category } from "../../services/categories";
 import { getBrands, type Brand } from "../../services/brands";
 import { getFlavors, type Flavor } from "../../services/flavors";
@@ -386,8 +387,7 @@ export function ProductsPage() {
                             className="product-price"
                             style={{ display: "block", marginTop: "6px" }}
                           >
-                            R${" "}
-                            {Number(product.price).toFixed(2).replace(".", ",")}
+                            {formatMoney(product.price)}
                           </b>
                         </div>
                         <div style={{ display: "flex", gap: "8px" }}>

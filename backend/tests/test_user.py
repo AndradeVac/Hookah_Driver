@@ -60,3 +60,17 @@ def test_get_user_rejects_missing_id(monkeypatch):
 
     with pytest.raises(ValueError, match="Usuário não encontrado"):
         service.get_by_id(uuid4())
+
+
+def test_user_response_serializes_any_stored_email():
+    from datetime import datetime, timezone
+
+    from app.schemas.user import UserResponse
+
+    now = datetime.now(timezone.utc)
+    response = UserResponse(
+        id=uuid4(), name="Equipe", email="equipe@lounge.local", role="OPERATOR",
+        active=True, created_at=now, updated_at=now,
+    )
+
+    assert response.email == "equipe@lounge.local"

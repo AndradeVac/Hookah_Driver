@@ -5,8 +5,9 @@ services:
     rootDir: backend
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /
+    # Migrations run on start because pre-deploy commands are not available on the free plan.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
         value: production
@@ -19,11 +20,11 @@ services:
       - key: JWT_ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: "30"
+        value: "480"
       - key: FRONTEND_URL
         value: https://hookah-driver.vercel.app
       - key: APP_BASE_URL
-        sync: false
+        value: https://hookah-driver-api.onrender.com
       - key: MERCADO_PAGO_ACCESS_TOKEN
         sync: false
       - key: MERCADO_PAGO_PUBLIC_KEY

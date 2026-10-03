@@ -5,13 +5,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CustomerCreate(BaseModel):
-    name: str = Field(min_length=1)
-    phone: str | None = None
+    name: str = Field(min_length=1, max_length=120)
+    phone: str | None = Field(default=None, max_length=30)
 
 
 class CustomerUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1)
-    phone: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    phone: str | None = Field(default=None, max_length=30)
     active: bool | None = None
 
 

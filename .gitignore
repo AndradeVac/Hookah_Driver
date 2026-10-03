@@ -1,23 +1,33 @@
-# Local configuration
+# Local configuration / secrets
 .env
-.env.development
-.env.production
+.env.*
+!.env.example
 
-# Python generated files
+# Python
 __pycache__/
 *.py[cod]
+.venv/
+venv/
+.pytest_cache/
 
-# Frontend dependencies and builds
+# Frontend
 node_modules/
 dist/
 
-# Python runtime (do not commit embedded Python)
+# Embedded Python runtime (never commit)
 Python/
 backend/Python/
 **/pythoncore*/
 *.exe
 *.dll
 *.lib
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
 
 # Mockups without product photos
 MOCKUPS\ SEM\ ANVISA/

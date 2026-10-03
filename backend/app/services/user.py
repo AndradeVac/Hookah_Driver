@@ -1,16 +1,19 @@
+from uuid import UUID
+
+from pwdlib import PasswordHash
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import BusinessRuleError, NotFoundError
-from app.core.exceptions import AuthenticationError
-from app.models.user import User, UserRole
+from app.core.exceptions import AuthenticationError, BusinessRuleError, NotFoundError
 from app.models.audit_log import AuditLog
+from app.models.user import User, UserRole
 from app.repositories.user import UserRepository
 from app.schemas.user import UserCreate, UserStatusUpdate
-from pwdlib import PasswordHash
 
 
 class UserService:
     password_hash = PasswordHash.recommended()
+    # Verified when the e-mail does not exist, so response time does not reveal valid accounts.
+    _dummy_hash = password_hash.hash("hookah-driver-timing-guard")
 
     def __init__(self, db: Session):
         self.repository = UserRepository(db)
@@ -18,8 +21,8 @@ class UserService:
 
     def create(self, data: UserCreate) -> User:
         user = User(
-            name=data.name,
-            email=data.email.lower(),
+            name=data.name.strip(),
+            email=data.email.strip().lower(),
             password_hash=self.password_hash.hash(data.password),
             role=data.role,
         )
@@ -27,7 +30,7 @@ class UserService:
         self.db.commit()
         return user
 
-    def get_by_id(self, user_id):
+    def get_by_id(self, user_id: UUID) -> User:
         user = self.repository.get_by_id(user_id)
         if user is None:
             raise NotFoundError("Usuário não encontrado.")
@@ -36,7 +39,7 @@ class UserService:
     def get_all(self) -> list[User]:
         return self.repository.get_all()
 
-    def update_status(self, user_id, data: UserStatusUpdate, actor: User) -> User:
+    def update_status(self, user_id: UUID, data: UserStatusUpdate, actor: User) -> User:
         user = self.repository.get_by_id(user_id, include_inactive=True)
         if user is None:
             raise NotFoundError("Usuário não encontrado.")
@@ -45,7 +48,13 @@ class UserService:
         if not data.active and user.role is UserRole.ADMIN and self.repository.count_active_admins() <= 1:
             raise BusinessRuleError("O sistema precisa manter pelo menos um administrador ativo.")
         user.active = data.active
-        self.db.add(AuditLog(actor_user_id=actor.id, action="USER_STATUS_CHANGED", entity_type="USER", entity_id=user.id, details=f"active={data.active}"))
+        self.db.add(AuditLog(
+            actor_user_id=actor.id,
+            action="USER_STATUS_CHANGED",
+            entity_type="USER",
+            entity_id=user.id,
+            details=f"active={data.active}",
+        ))
         self.repository.update(user)
         self.db.commit()
         return user
@@ -54,7 +63,10 @@ class UserService:
         return self.password_hash.verify(plain_password, password_hash)
 
     def authenticate(self, email: str, password: str) -> User:
-        user = self.repository.get_by_email(email.lower())
-        if user is None or not self.verify_password(password, user.password_hash):
+        user = self.repository.get_by_email(email.strip().lower())
+        if user is None:
+            self.verify_password(password, self._dummy_hash)
+            raise AuthenticationError("E-mail ou senha inválidos.")
+        if not self.verify_password(password, user.password_hash):
             raise AuthenticationError("E-mail ou senha inválidos.")
         return user

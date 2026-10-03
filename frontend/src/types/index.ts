@@ -1,18 +1,5 @@
 export type OrderStatus = 'AWAITING_PAYMENT' | 'RECEIVED' | 'PREPARING' | 'READY' | 'FINISHED' | 'CANCELLED'
 
-export type Metric = {
-  label: string
-  value: string
-  note: string
-  trend?: string
-}
+export type PaymentMethod = 'PIX' | 'CARD' | 'CASH'
 
-export type OrderSummary = {
-  id: string
-  orderNumber: string
-  customer: string
-  items: string
-  total: string
-  status: OrderStatus
-  time: string
-}
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED'

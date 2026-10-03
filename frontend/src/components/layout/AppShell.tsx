@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import {
   Boxes,
   ChevronDown,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../features/auth/AuthProvider'
+import { logoImage } from '../../lib/images'
 
 const navigation = [
   { label: 'Visão geral', to: '/', icon: LayoutDashboard },
@@ -33,6 +34,10 @@ export function AppShell() {
   const [open, setOpen] = useState(false)
   const [sections, setSections] = useState({ catalog: true, relationship: true, administration: true })
   const { user, logout } = useAuth()
+  const { pathname } = useLocation()
+  const currentSection = pathname === '/'
+    ? navigation[0].label
+    : navigation.find(({ to }) => to !== '/' && pathname.startsWith(to))?.label ?? 'Painel'
 
   function toggleSection(section: keyof typeof sections) {
     setSections((current) => ({ ...current, [section]: !current[section] }))
@@ -42,7 +47,7 @@ export function AppShell() {
     <div className="app-shell app-shell-dark">
       <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
         <div className="brand-lockup">
-          <img className="brand-logo" src="/images/logo.jpeg" alt="Hookah Drive" />
+          <img className="brand-logo" {...logoImage} />
           <button className="icon-button mobile-close" onClick={() => setOpen(false)} aria-label="Fechar menu">
             <X size={18} />
           </button>
@@ -87,13 +92,9 @@ export function AppShell() {
             <Menu size={18} />
           </button>
           <div className="breadcrumb">
-            <span>Admin</span>
+            <span>{user?.role === 'ADMIN' ? 'Admin' : 'Operação'}</span>
             <b>—</b>
-            <strong>Dashboard</strong>
-          </div>
-          <div className="topbar-actions">
-            <span className="status-dot"><i /> API online</span>
-            <button className="icon-button"><CircleUserRound size={20} /></button>
+            <strong>{currentSection}</strong>
           </div>
         </header>
         <Outlet />

@@ -1,92 +1,92 @@
 import hashlib
 import hmac
 import json
+from uuid import UUID
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.database import get_db
 from app.main import app
-from app.models.order import OrderStatus, PaymentStatus
+from app.models.order import PaymentStatus
+from app.services.payment import PaymentGatewayError
+
+ORDER_ID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+SECRET = "wh-secret"
 
 
-class FakeOrder:
-    def __init__(self, order_id):
-        self.id = order_id
-        self.payment_status = PaymentStatus.PENDING
-        self.status = OrderStatus.AWAITING_PAYMENT
-        self.paid_at = None
-        self.status_history = []
-
-
-class FakeQuery:
-    def __init__(self, order):
-        self._order = order
-
-    def filter(self, *args, **kwargs):
-        return self
-
-    def first(self):
-        return self._order
-
-
-class FakeDb:
-    def __init__(self, order):
-        self._order = order
-        self.committed = False
-
-    def query(self, model):
-        return FakeQuery(self._order)
-
-    def commit(self):
-        self.committed = True
-
-
-def _signature_header(secret: str, data_id: str, request_id: str, ts: str = "1704908010"):
+def _signature_header(data_id: str, request_id: str, ts: str = "1704908010"):
     manifest = f"id:{data_id};request-id:{request_id};ts:{ts};"
-    digest = hmac.new(secret.encode("utf-8"), manifest.encode("utf-8"), hashlib.sha256).hexdigest()
+    digest = hmac.new(SECRET.encode("utf-8"), manifest.encode("utf-8"), hashlib.sha256).hexdigest()
     return f"ts={ts},v1={digest}"
 
 
-def test_webhook_updates_order_payment_status_to_paid(monkeypatch):
-    order_id = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-    fake_order = FakeOrder(order_id)
-    fake_db = FakeDb(fake_order)
+@pytest.fixture
+def applied(monkeypatch):
+    """Captures calls to OrderService.apply_payment_status."""
+    calls = []
 
-    monkeypatch.setattr("app.api.routes.payments.settings.mercado_pago_webhook_secret", "wh-secret")
-    monkeypatch.setattr(
-        "app.services.payment.PaymentService.get_payment_status",
-        lambda self, payment_id: {"status": "approved", "external_reference": order_id},
+    class FakeOrderService:
+        def __init__(self, db):
+            pass
+
+        def apply_payment_status(self, order_id, payment_status):
+            calls.append((order_id, payment_status))
+
+    monkeypatch.setattr("app.services.payment.settings.mercado_pago_webhook_secret", SECRET)
+    monkeypatch.setattr("app.api.routes.payments.OrderService", FakeOrderService)
+    app.dependency_overrides[get_db] = lambda: None
+    yield calls
+    app.dependency_overrides.pop(get_db, None)
+
+
+def _post(data_id="999", request_id="req-1", signature=None):
+    payload = json.dumps({"type": "payment", "data": {"id": data_id}}).encode("utf-8")
+    return TestClient(app).post(
+        f"/payments/mercado-pago/webhook?data.id={data_id}",
+        content=payload,
+        headers={
+            "x-signature": signature or _signature_header(data_id, request_id),
+            "x-request-id": request_id,
+            "content-type": "application/json",
+        },
     )
 
-    app.dependency_overrides[get_db] = lambda: fake_db
-    try:
-        client = TestClient(app)
-        payload = json.dumps({"type": "payment", "data": {"id": "999"}}).encode("utf-8")
-        signature = _signature_header("wh-secret", "999", "req-1")
-        response = client.post(
-            "/payments/mercado-pago/webhook?data.id=999",
-            content=payload,
-            headers={"x-signature": signature, "x-request-id": "req-1", "content-type": "application/json"},
-        )
-    finally:
-        app.dependency_overrides.pop(get_db, None)
+
+def test_webhook_marks_order_as_paid(monkeypatch, applied):
+    monkeypatch.setattr(
+        "app.services.payment.PaymentService.get_payment",
+        lambda self, payment_id: {"status": "approved", "external_reference": ORDER_ID},
+    )
+
+    response = _post()
 
     assert response.status_code == 200, response.text
-    assert fake_order.payment_status == PaymentStatus.PAID
-    assert fake_order.status == OrderStatus.RECEIVED
-    assert fake_order.paid_at is not None
-    assert len(fake_order.status_history) == 1
-    assert fake_db.committed is True
+    assert applied == [(UUID(ORDER_ID), PaymentStatus.PAID)]
 
 
-def test_webhook_rejects_invalid_signature(monkeypatch):
-    monkeypatch.setattr("app.api.routes.payments.settings.mercado_pago_webhook_secret", "wh-secret")
-
-    client = TestClient(app)
-    response = client.post(
-        "/payments/mercado-pago/webhook?data.id=999",
-        content=b"{}",
-        headers={"x-signature": "ts=123,v1=deadbeef", "x-request-id": "req-1"},
+def test_webhook_ignores_pending_payments(monkeypatch, applied):
+    monkeypatch.setattr(
+        "app.services.payment.PaymentService.get_payment",
+        lambda self, payment_id: {"status": "pending", "external_reference": ORDER_ID},
     )
 
+    assert _post().status_code == 200
+    assert applied == []
+
+
+def test_webhook_asks_for_retry_when_gateway_fails(monkeypatch, applied):
+    def fail(self, payment_id):
+        raise PaymentGatewayError("Mercado Pago indisponível.")
+
+    monkeypatch.setattr("app.services.payment.PaymentService.get_payment", fail)
+
+    assert _post().status_code == 502
+    assert applied == []
+
+
+def test_webhook_rejects_invalid_signature(applied):
+    response = _post(signature="ts=123,v1=deadbeef")
+
     assert response.status_code == 401
+    assert applied == []

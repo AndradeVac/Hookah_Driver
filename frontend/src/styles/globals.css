@@ -2723,3 +2723,34 @@ button {
   border-radius: 8px;
   flex: 0 0 42px;
 }
+
+/* ===== Imagens resilientes (celular, tablet, notebook, TV) ===== */
+img { max-width: 100%; }
+.journey-categories button img,
+.journey-options button img,
+.customer-cart-row img,
+.journey-extras img {
+  aspect-ratio: 1 / 1;
+  background: #141414;
+}
+/* caixas de essência são quadradas/transparentes: mostrar inteiras, sem cortar */
+.journey-rosh-card img {
+  object-fit: contain;
+  background: #fff;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  max-height: 200px;
+}
+.journey-product-image { height: auto; max-height: 220px; aspect-ratio: 16 / 9; }
+.journey-feature img { aspect-ratio: 1 / 1; }
+@media (min-width: 900px) {
+  .journey-categories button img,
+  .journey-options button img { width: 56px; height: 56px; flex-basis: 56px; }
+  .journey-rosh-card img { max-height: 240px; }
+}
+@media (min-width: 1600px) { /* TV / telas grandes */
+  .journey-categories button img,
+  .journey-options button img { width: 72px; height: 72px; flex-basis: 72px; }
+  .journey-rosh-card img { max-height: 300px; }
+  .journey-product-image { max-height: 300px; }
+}

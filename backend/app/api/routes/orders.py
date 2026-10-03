@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -9,6 +9,8 @@ from app.models.user import User, UserRole
 from app.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
 from app.services.order import OrderService
 
+
+staff_only = require_roles(UserRole.ADMIN, UserRole.OPERATOR)
 
 router = APIRouter(
     prefix="/orders",
@@ -20,20 +22,25 @@ router = APIRouter(
 def create_order(
     data: OrderCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+    _: User = Depends(staff_only),
 ):
     return OrderService(db).create(data)
 
 
 @router.get("", response_model=list[OrderResponse])
-def get_orders(db: Session = Depends(get_db)):
-    return OrderService(db).get_all()
+def get_orders(
+    limit: int = Query(default=200, ge=1, le=1000),
+    db: Session = Depends(get_db),
+    _: User = Depends(staff_only),
+):
+    return OrderService(db).get_all(limit=limit)
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
 def get_order(
     order_id: UUID,
     db: Session = Depends(get_db),
+    _: User = Depends(staff_only),
 ):
     return OrderService(db).get_by_id(order_id)
 
@@ -43,6 +50,6 @@ def update_order_status(
     order_id: UUID,
     data: OrderStatusUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+    current_user: User = Depends(staff_only),
 ):
     return OrderService(db).update_status(order_id, data, current_user)

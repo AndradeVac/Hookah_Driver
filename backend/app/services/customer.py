@@ -32,7 +32,9 @@ class CustomerService:
         return self.repository.get_all()
 
     def update(self, customer_id: UUID, data: CustomerUpdate) -> Customer:
-        customer = self.get_by_id(customer_id)
+        customer = self.repository.get_by_id_any_status(customer_id)
+        if customer is None:
+            raise NotFoundError("Cliente não encontrado.")
 
         if data.name is not None:
             customer.name = data.name

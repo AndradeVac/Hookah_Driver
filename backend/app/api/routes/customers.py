@@ -13,15 +13,12 @@ from app.services.customer import CustomerService
 router = APIRouter(
     prefix="/customers",
     tags=["Customers"],
+    dependencies=[Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR))],
 )
 
 
 @router.post("", response_model=CustomerResponse, status_code=201)
-def create_customer(
-    data: CustomerCreate,
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
-):
+def create_customer(data: CustomerCreate, db: Session = Depends(get_db)):
     return CustomerService(db).create(data)
 
 
@@ -31,27 +28,15 @@ def get_customers(db: Session = Depends(get_db)):
 
 
 @router.get("/{customer_id}", response_model=CustomerResponse)
-def get_customer(
-    customer_id: UUID,
-    db: Session = Depends(get_db),
-):
+def get_customer(customer_id: UUID, db: Session = Depends(get_db)):
     return CustomerService(db).get_by_id(customer_id)
 
 
 @router.patch("/{customer_id}", response_model=CustomerResponse)
-def update_customer(
-    customer_id: UUID,
-    data: CustomerUpdate,
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
-):
+def update_customer(customer_id: UUID, data: CustomerUpdate, db: Session = Depends(get_db)):
     return CustomerService(db).update(customer_id, data)
 
 
 @router.delete("/{customer_id}", response_model=CustomerResponse)
-def delete_customer(
-    customer_id: UUID,
-    db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
-):
+def delete_customer(customer_id: UUID, db: Session = Depends(get_db)):
     return CustomerService(db).delete(customer_id)

@@ -6,7 +6,7 @@ import pytest
 from app.core.exceptions import BusinessRuleError
 from app.models.order import Order, OrderStatus, PaymentStatus
 from app.schemas.order import OrderCreate, OrderItemCreate, OrderStatusUpdate
-from app.services.order import OrderService
+from app.services.order import OrderService, item_display_name
 
 
 class FakeDatabase:
@@ -28,7 +28,8 @@ class FakeCustomerRepository:
         self.customer = customer
 
     def get_by_id(self, customer_id):
-        if self.customer is not None and self.customer.id == customer_id:
+        # Mirrors CustomerRepository.get_by_id: inactive customers are not returned.
+        if self.customer is not None and self.customer.id == customer_id and getattr(self.customer, "active", True):
             return self.customer
         return None
 
@@ -38,7 +39,9 @@ class FakeProductRepository:
         self.products = products
 
     def get_by_id(self, product_id):
-        return self.products.get(product_id)
+        # Mirrors ProductRepository.get_by_id: inactive products are not returned.
+        product = self.products.get(product_id)
+        return product if product is not None and getattr(product, "active", True) else None
 
 
 class FakeOrderRepository:
@@ -83,12 +86,12 @@ def test_create_order_calculates_totals_and_history(monkeypatch):
     first_product = type(
         "Product",
         (),
-        {"id": uuid4(), "name": "Carvao", "price": Decimal("10.00")},
+        {"id": uuid4(), "flavor": None, "name": "Carvao", "price": Decimal("10.00")},
     )()
     second_product = type(
         "Product",
         (),
-        {"id": uuid4(), "name": "Essencia", "price": Decimal("15.50")},
+        {"id": uuid4(), "flavor": None, "name": "Essencia", "price": Decimal("15.50")},
     )()
     service, repository = build_service(
         monkeypatch,
@@ -121,7 +124,7 @@ def test_create_order_keeps_price_snapshot(monkeypatch):
     product = type(
         "Product",
         (),
-        {"id": uuid4(), "name": "Produto", "price": Decimal("12.50")},
+        {"id": uuid4(), "flavor": None, "name": "Produto", "price": Decimal("12.50")},
     )()
     service, _ = build_service(monkeypatch, customer, {product.id: product})
 
@@ -143,7 +146,7 @@ def test_cannot_release_order_awaiting_unconfirmed_payment(monkeypatch):
     product = type(
         "Product",
         (),
-        {"id": uuid4(), "name": "Produto", "price": Decimal("12.50")},
+        {"id": uuid4(), "flavor": None, "name": "Produto", "price": Decimal("12.50")},
     )()
     service, repository = build_service(monkeypatch, customer, {product.id: product})
     order = service.create(
@@ -200,7 +203,7 @@ def test_create_order_rejects_inactive_product(monkeypatch):
     product = type(
         "Product",
         (),
-        {"id": uuid4(), "name": "Produto inativo", "price": Decimal("10.00"), "active": False},
+        {"id": uuid4(), "flavor": None, "name": "Produto inativo", "price": Decimal("10.00"), "active": False},
     )()
     service, _ = build_service(monkeypatch, customer, {product.id: product})
 
@@ -310,7 +313,7 @@ def test_create_order_rolls_back_when_persistence_fails(monkeypatch):
     product = type(
         "Product",
         (),
-        {"id": uuid4(), "name": "Produto", "price": Decimal("10.00")},
+        {"id": uuid4(), "flavor": None, "name": "Produto", "price": Decimal("10.00")},
     )()
     service, repository = build_service(monkeypatch, customer, {product.id: product})
     repository.fail_create = True
@@ -325,3 +328,65 @@ def test_create_order_rolls_back_when_persistence_fails(monkeypatch):
         )
 
     assert FakeDatabase.last.rollback_calls == 1
+
+
+def _awaiting_payment_order():
+    return Order(
+        id=uuid4(),
+        customer_id=uuid4(),
+        payment_method="PIX",
+        status=OrderStatus.AWAITING_PAYMENT,
+        payment_status=PaymentStatus.PENDING,
+        subtotal=Decimal("40.00"),
+        total=Decimal("40.00"),
+    )
+
+
+def test_item_display_name_includes_brand_and_flavor():
+    brand = type("Brand", (), {"name": "Ziggy"})()
+    flavor = type("Flavor", (), {"name": "Banana", "brand": brand})()
+    rosh = type("Product", (), {"name": "Rosh", "flavor": flavor})()
+    plain = type("Product", (), {"name": "Coca", "flavor": None})()
+
+    assert item_display_name(rosh) == "Rosh · Ziggy Banana"
+    assert item_display_name(plain) == "Coca"
+
+
+def test_apply_payment_status_releases_paid_order(monkeypatch):
+    service, repository = build_service(monkeypatch, None, {})
+    repository.order = _awaiting_payment_order()
+
+    order = service.apply_payment_status(repository.order.id, PaymentStatus.PAID)
+
+    assert order.payment_status is PaymentStatus.PAID
+    assert order.status is OrderStatus.RECEIVED
+    assert order.paid_at is not None
+    assert order.status_history[-1].status is OrderStatus.RECEIVED
+
+
+def test_apply_payment_status_cancels_failed_order(monkeypatch):
+    service, repository = build_service(monkeypatch, None, {})
+    repository.order = _awaiting_payment_order()
+
+    order = service.apply_payment_status(repository.order.id, PaymentStatus.FAILED)
+
+    assert order.payment_status is PaymentStatus.FAILED
+    assert order.status is OrderStatus.CANCELLED
+
+
+def test_apply_payment_status_never_downgrades_a_paid_order(monkeypatch):
+    service, repository = build_service(monkeypatch, None, {})
+    repository.order = _awaiting_payment_order()
+    service.apply_payment_status(repository.order.id, PaymentStatus.PAID)
+
+    order = service.apply_payment_status(repository.order.id, PaymentStatus.FAILED)
+
+    assert order.payment_status is PaymentStatus.PAID
+    assert order.status is OrderStatus.RECEIVED
+    assert len(order.status_history) == 1
+
+
+def test_apply_payment_status_ignores_unknown_order(monkeypatch):
+    service, _ = build_service(monkeypatch, None, {})
+
+    assert service.apply_payment_status(uuid4(), PaymentStatus.PAID) is None
