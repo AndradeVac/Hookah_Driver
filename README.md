@@ -55,7 +55,8 @@ npm run build
 
 ### API (Render)
 
-O `render.yaml` cria a API e o PostgreSQL. A cada deploy as migrações rodam antes do servidor subir.
+O `render.yaml` descreve a API; o PostgreSQL fica no **Neon** (`DATABASE_URL` configurada no painel da Render).
+A cada deploy as migrações rodam antes do servidor subir.
 Configure no painel da Render:
 
 | Variável | Valor |
