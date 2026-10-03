@@ -55,7 +55,10 @@ Commons, Openverse). CC BY/BY-SA exigem crédito: adicione a foto em
 Imagens sem autorização.
 
 Hoje usam fotos licenciadas: carvão, acender carvão, Coca, Monster, Água, banner do Rosh e as
-categorias Acessórios, Adicionais, Bebidas e Kits. O restante usa ícones até chegarem fotos reais.
+categorias Acessórios, Adicionais, Bebidas e Kits. Fotos do próprio lounge: alumínio, essência,
+kit mangueira, pegador, piteira higiênica, rosh (peça), vaso, piteira Hydra, Intake, Combos 1–4 e
+categoria Combos. Ainda com ícone: abafador, borrachas (mangueira, rosh, vaso), piteira higiênica
+Ziggy, prato e os dois kits.
 
 ## Regras
 
