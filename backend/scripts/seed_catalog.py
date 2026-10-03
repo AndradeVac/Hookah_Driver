@@ -2,7 +2,7 @@
 
 Idempotent: rows are matched by name and only created or updated, never removed
 or deactivated, so it is safe to run against a database already in use.
-Every active flavor gets its own "Rosh" product, which is what the menu sells.
+Every active flavor in the database gets its own "Rosh" product, which is what the menu sells.
 
 Usage (from backend/):
     python -m scripts.seed_catalog            # apply
@@ -143,12 +143,18 @@ class Seeder:
             for name, price, description in products:
                 self.product(category, name, Decimal(price), description)
 
-        rosh = self.category(ROSH_CATEGORY)
         for brand_name, flavor_names in FLAVORS.items():
             brand = self.brand(brand_name)
             for flavor_name in flavor_names:
-                flavor = self.flavor(brand, flavor_name)
-                self.product(rosh, "Rosh", ROSH_PRICE, f"{brand.name} · {flavor.name}", flavor)
+                self.flavor(brand, flavor_name)
+
+        # Every active flavor in the database (including ones added in the admin) needs its Rosh.
+        rosh = self.category(ROSH_CATEGORY)
+        active_flavors = self.db.scalars(
+            select(Flavor).join(Brand).where(Flavor.active.is_(True), Brand.active.is_(True))
+        ).all()
+        for flavor in active_flavors:
+            self.product(rosh, "Rosh", ROSH_PRICE, f"{flavor.brand.name} · {flavor.name}", flavor)
 
 
 def main() -> int:
