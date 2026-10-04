@@ -19,7 +19,10 @@ Rotas do frontend: `/cliente` (cardápio público), `/pedidos` (acompanhamento p
   Pedidos entregues, cancelados e aguardando pagamento não aparecem.
 - `GET /public/orders/board` é público e retorna somente `order_number`, `status` e `created_at`.
   Não expõe nomes, telefones, itens, valores ou tokens de acompanhamento.
-- O acompanhamento individual continua em `/cliente?token=<public_token>`; o link é salvo na URL ao confirmar.
+- O acompanhamento individual fica em `/cliente`, sem token na URL. O identificador é salvo
+  no `sessionStorage` da aba e permite atualizar a página sem perder o pedido. Ao iniciar
+  um novo pedido, o acompanhamento salvo é removido. Links antigos e retornos de pagamento
+  com `?token=...` são consumidos e o parâmetro é removido da URL sem criar uma entrada no histórico.
 - A migração `c3d4e5f6a7b8` corrige o contador de pedidos após importações de dados, sem apagar registros
   nem retroceder a numeração. Publique **também a API na Render**: atualizar apenas a Vercel não corrige o banco.
 

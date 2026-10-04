@@ -21,6 +21,7 @@ import { findRoshProduct, flavorNote, isRoshCategory } from '../../lib/catalog'
 import { formatMoney } from '../../lib/format'
 import { catalogImage, logoImage, slugify } from '../../lib/images'
 import { readJson, writeJson } from '../../lib/storage'
+import { readOrderToken, saveOrderToken } from '../../lib/orderTracking'
 import { apiErrorMessage, getWebSocketUrl } from '../../services/api'
 import type { Brand } from '../../services/brands'
 import type { Category } from '../../services/categories'
@@ -117,6 +118,16 @@ function refreshCart(items: CartItem[], catalog: Awaited<ReturnType<typeof getCu
 
 export function CustomerJourneyPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [trackingToken, setTrackingToken] = useState<string | null>(() => {
+    const legacyToken = searchParams.get('token')
+    if (legacyToken) return legacyToken
+    try {
+      return readOrderToken()
+    } catch {
+      toast.warning('O navegador bloqueou o acompanhamento salvo. Mantenha esta página aberta após enviar seu pedido.')
+      return null
+    }
+  })
   const [step, setStep] = useState<Step>('register')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -204,12 +215,32 @@ export function CustomerJourneyPage() {
     }
   }, [])
 
-  // Returning from the payment page (?token=...) reopens the order tracking.
+  function persistTracking(token: string | null) {
+    try {
+      saveOrderToken(token)
+    } catch {
+      toast.warning('Não foi possível salvar o acompanhamento neste navegador. Mantenha esta página aberta para acompanhar o pedido.')
+    }
+  }
+
+  // Consume old links and payment returns without keeping the token in browser history.
   useEffect(() => {
     const token = searchParams.get('token')
     if (!token) return
+    persistTracking(token)
+    setTrackingToken(token)
+    const cleanParams = new URLSearchParams(searchParams)
+    cleanParams.delete('token')
+    setSearchParams(cleanParams, { replace: true })
+  }, [searchParams, setSearchParams])
+
+  useEffect(() => {
+    const token = trackingToken
+    if (!token || order?.public_token === token) return
+    let active = true
     getPublicOrder(token)
       .then((tracking) => {
+        if (!active) return
         setOrder({
           order_id: token,
           order_number: tracking.order_number,
@@ -223,8 +254,13 @@ export function CustomerJourneyPage() {
         })
         setStep('success')
       })
-      .catch(() => setError('Não foi possível localizar seu pedido.'))
-  }, [searchParams])
+      .catch(() => {
+        if (active) setError('Não foi possível localizar seu pedido.')
+      })
+    return () => {
+      active = false
+    }
+  }, [trackingToken, order?.public_token])
 
   // Live status: WebSocket first, polling if the socket drops before the order ends.
   useEffect(() => {
@@ -357,7 +393,8 @@ export function CustomerJourneyPage() {
       setLastOrder(cart)
       setOrder(created)
       setStep('success')
-      setSearchParams({ token: created.public_token }, { replace: true })
+      persistTracking(created.public_token)
+      setTrackingToken(created.public_token)
       if (created.payment_error) setError(created.payment_error)
     } catch (err) {
       setError(apiErrorMessage(err, 'Não foi possível confirmar o pedido. Tente novamente.'))
@@ -371,7 +408,8 @@ export function CustomerJourneyPage() {
     setOrder(null)
     setError('')
     setStep('menu')
-    setSearchParams({}, { replace: true })
+    persistTracking(null)
+    setTrackingToken(null)
   }
 
   if (loading) {
