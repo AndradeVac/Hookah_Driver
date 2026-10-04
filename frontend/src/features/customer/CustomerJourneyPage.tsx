@@ -14,7 +14,7 @@ import {
   Search,
   ShoppingBag,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { findRoshProduct, flavorNote, isRoshCategory } from '../../lib/catalog'
@@ -22,14 +22,14 @@ import { formatMoney } from '../../lib/format'
 import { catalogImage, logoImage, slugify } from '../../lib/images'
 import { readJson, writeJson } from '../../lib/storage'
 import { apiErrorMessage, getWebSocketUrl } from '../../services/api'
-import { getBrands, type Brand } from '../../services/brands'
-import { getCategories, type Category } from '../../services/categories'
-import { getFlavors, type Flavor } from '../../services/flavors'
-import { getProducts, type Product } from '../../services/products'
+import type { Brand } from '../../services/brands'
+import type { Category } from '../../services/categories'
+import type { Flavor } from '../../services/flavors'
+import type { Product } from '../../services/products'
+import { getCustomerCatalog } from '../../services/customerCatalog'
 import {
   createPublicOrder,
   getPublicOrder,
-  getPublicConfig,
   getPublicOrderHistory,
   type PublicHistoryOrder,
   type PublicOrderResponse,
@@ -42,12 +42,14 @@ type CartItem = {
   quantity: number
   /** Shown to the customer, e.g. the Rosh flavor. */
   variation?: string
+  selectedFlavorId?: string
   notes?: string
 }
 
 const FAVORITES_KEY = 'hookah-customer-favorites'
 const LAST_ORDER_KEY = 'hookah-customer-last-order'
 const FALLBACK_POLL_MS = 10_000
+const CATALOG_REFRESH_MS = 15_000
 const FINAL_STATUSES = new Set(['FINISHED', 'CANCELLED'])
 
 const STEP_TITLES: Record<Step, string> = {
@@ -100,6 +102,19 @@ function cartKey(item: CartItem) {
   return `${item.product.id}|${item.variation ?? ''}|${item.notes ?? ''}`
 }
 
+function refreshCart(items: CartItem[], catalog: Awaited<ReturnType<typeof getCustomerCatalog>>) {
+  return items.flatMap((item) => {
+    const product = catalog.products.find((candidate) => candidate.id === item.product.id && candidate.active)
+    if (!product) return []
+    if (item.selectedFlavorId) {
+      const flavor = catalog.flavors.find((candidate) => candidate.id === item.selectedFlavorId)
+      const rosh = flavor ? findRoshProduct(catalog.products, catalog.categories, flavor) : null
+      if (!rosh || rosh.product.id !== product.id) return []
+    }
+    return [{ ...item, product }]
+  })
+}
+
 export function CustomerJourneyPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [step, setStep] = useState<Step>('register')
@@ -108,9 +123,9 @@ export function CustomerJourneyPage() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [flavors, setFlavors] = useState<Flavor[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [allProducts, setProducts] = useState<Product[]>([])
+  const [categorySelection, setSelectedCategory] = useState<Category | null>(null)
+  const [productSelection, setSelectedProduct] = useState<Product | null>(null)
   const [selectedExtras, setSelectedExtras] = useState<Product[]>([])
   const [productQuantity, setProductQuantity] = useState(1)
   const [productNotes, setProductNotes] = useState('')
@@ -126,18 +141,67 @@ export function CustomerJourneyPage() {
   const [lastOrder, setLastOrder] = useState<CartItem[]>(() => readJson(LAST_ORDER_KEY, []))
   const [history, setHistory] = useState<PublicHistoryOrder[]>([])
   const [onlinePayments, setOnlinePayments] = useState(false)
+  const [catalogError, setCatalogError] = useState('')
+  const cartRef = useRef(cart)
+  cartRef.current = cart
+  const products = useMemo(() => allProducts.filter((product) => product.active), [allProducts])
+  const selectedProduct = products.find((product) => product.id === productSelection?.id) ?? null
+  const selectedCategory = categories.find((category) => category.id === categorySelection?.id) ?? null
+
+  function applyCatalog(catalog: Awaited<ReturnType<typeof getCustomerCatalog>>) {
+    setOnlinePayments(catalog.config.online_payments_enabled)
+    setBrands(catalog.brands)
+    setFlavors(catalog.flavors)
+    setCategories(catalog.categories)
+    setProducts(catalog.products)
+    setCatalogError('')
+    setSelectedExtras((current) => current.flatMap((extra) => {
+      const latest = catalog.products.find((product) => product.id === extra.id && product.active)
+      return latest ? [latest] : []
+    }))
+    const previous = cartRef.current
+    const updated = refreshCart(previous, catalog)
+    if (updated.length < previous.length) toast.info('Itens desativados foram removidos do seu pedido. Revise o carrinho.')
+    else if (updated.some((item, index) => item.product.price !== previous[index].product.price)) {
+      toast.info('O preço de um item mudou. Revise o total do seu pedido.')
+    }
+    cartRef.current = updated
+    setCart(updated)
+  }
+  const applyCatalogRef = useRef(applyCatalog)
+  applyCatalogRef.current = applyCatalog
 
   useEffect(() => {
-    Promise.all([getBrands(), getFlavors(), getCategories(), getProducts(), getPublicConfig()])
-      .then(([loadedBrands, loadedFlavors, loadedCategories, loadedProducts, config]) => {
-        setOnlinePayments(config.online_payments_enabled)
-        setBrands(loadedBrands.filter((item) => item.active))
-        setFlavors(loadedFlavors.filter((item) => item.active))
-        setCategories(loadedCategories.filter((item) => item.active))
-        setProducts(loadedProducts.filter((item) => item.active))
-      })
-      .catch(() => setError('Não foi possível carregar o cardápio. Atualize a página.'))
-      .finally(() => setLoading(false))
+    let active = true
+    let inFlight = false
+    let timer: number | undefined
+    async function refresh() {
+      if (inFlight || document.visibilityState === 'hidden') return
+      inFlight = true
+      window.clearTimeout(timer)
+      try {
+        const catalog = await getCustomerCatalog()
+        if (active) applyCatalogRef.current(catalog)
+      } catch {
+        if (active) setCatalogError('Não foi possível atualizar o cardápio. Verifique sua conexão; tentaremos novamente em instantes.')
+      } finally {
+        inFlight = false
+        if (active) {
+          setLoading(false)
+          timer = window.setTimeout(() => void refresh(), CATALOG_REFRESH_MS)
+        }
+      }
+    }
+    const onVisible = () => { if (document.visibilityState === 'visible') void refresh() }
+    void refresh()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
   }, [])
 
   // Returning from the payment page (?token=...) reopens the order tracking.
@@ -207,8 +271,11 @@ export function CustomerJourneyPage() {
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
   const menuCategories = categories.filter((item) => !isRoshCategory(item))
   const menuCategoryIds = new Set(menuCategories.map((item) => item.id))
-  const brandFlavors = flavors.filter((item) => item.brand_id === brand?.id)
-  const rosh = flavor ? findRoshProduct(products, categories, flavor) : null
+  const availableFlavors = flavors.filter((item) => findRoshProduct(allProducts, categories, item))
+  const availableBrands = brands.filter((item) => availableFlavors.some((flavor) => flavor.brand_id === item.id))
+  const brandFlavors = availableFlavors.filter((item) => item.brand_id === brand?.id)
+  const currentFlavor = flavors.find((item) => item.id === flavor?.id)
+  const rosh = currentFlavor ? findRoshProduct(allProducts, categories, currentFlavor) : null
   const extrasCategory = categories.find((category) => category.name.toLowerCase() === 'adicionais')
   const extraProducts = extrasCategory ? products.filter((product) => product.category_id === extrasCategory.id) : []
   const categoryProducts = selectedCategory ? products.filter((product) => product.category_id === selectedCategory.id) : []
@@ -234,10 +301,11 @@ export function CustomerJourneyPage() {
   }
 
   /** Rebuilds a saved cart with current products/prices, dropping what is no longer sold. */
-  function restoreCart(items: Array<{ productId: string; quantity: number; variation?: string; notes?: string }>) {
+  function restoreCart(items: Array<{ productId: string; quantity: number; variation?: string; selectedFlavorId?: string; notes?: string }>) {
     const restored = items.flatMap((item) => {
       const product = products.find((candidate) => candidate.id === item.productId)
-      return product ? [{ product, quantity: item.quantity, variation: item.variation, notes: item.notes }] : []
+      if (item.selectedFlavorId && !availableFlavors.some((flavor) => flavor.id === item.selectedFlavorId)) return []
+      return product ? [{ product, quantity: item.quantity, variation: item.variation, selectedFlavorId: item.selectedFlavorId, notes: item.notes }] : []
     })
     if (restored.length < items.length) toast.info('Alguns itens não estão mais disponíveis e foram removidos.')
     if (restored.length === 0) return
@@ -271,11 +339,19 @@ export function CustomerJourneyPage() {
     setSending(true)
     setError('')
     try {
+      const catalog = await getCustomerCatalog()
+      const latestCart = refreshCart(cart, catalog)
+      applyCatalog(catalog)
+      if (latestCart.length !== cart.length || latestCart.some((item, index) => item.product.price !== cart[index].product.price)) {
+        setStep('cart')
+        setError('O cardápio mudou. Revise os itens e o total antes de confirmar novamente.')
+        return
+      }
       const created = await createPublicOrder({
         customer_name: name.trim(),
         customer_phone: phoneDigits,
-        payment_method: onlinePayments ? 'PIX' : 'CASH',
-        items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })),
+        payment_method: catalog.config.online_payments_enabled ? 'PIX' : 'CASH',
+        items: latestCart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })),
       })
       writeJson(LAST_ORDER_KEY, cart)
       setLastOrder(cart)
@@ -338,6 +414,7 @@ export function CustomerJourneyPage() {
       </header>
 
       {error && <div className="customer-error" role="alert">{error}</div>}
+      {catalogError && <div className="customer-error" role="alert">{catalogError}</div>}
 
       {step === 'register' && (
         <section className="customer-panel customer-register">
@@ -371,7 +448,7 @@ export function CustomerJourneyPage() {
             </div>
           ) : (
             <>
-              <div className="journey-feature">
+              {availableBrands.length > 0 && <div className="journey-feature">
                 <img {...catalogImage('/images/banner-rosh.webp')} loading="eager" alt="Rosh com frutas" />
                 <div>
                   <span>Mais pedidos</span>
@@ -379,7 +456,7 @@ export function CustomerJourneyPage() {
                   <p>Escolha uma marca e descubra os sabores.</p>
                   <button onClick={() => setStep('brands')}>Escolher Rosh <ArrowRight size={16} /></button>
                 </div>
-              </div>
+              </div>}
               {history.length > 0 && (
                 <div className="journey-history">
                   <h3>Pedidos anteriores</h3>
@@ -396,7 +473,7 @@ export function CustomerJourneyPage() {
                 </div>
               )}
               {history.length === 0 && lastOrder.length > 0 && (
-                <button className="journey-reorder" onClick={() => restoreCart(lastOrder.map((entry) => ({ productId: entry.product.id, quantity: entry.quantity, variation: entry.variation, notes: entry.notes })))}>
+                <button className="journey-reorder" onClick={() => restoreCart(lastOrder.map((entry) => ({ productId: entry.product.id, quantity: entry.quantity, variation: entry.variation, selectedFlavorId: entry.selectedFlavorId, notes: entry.notes })))}>
                   <History size={16} />
                   <span>Repetir último pedido</span>
                   <RotateCcw size={15} />
@@ -462,6 +539,13 @@ export function CustomerJourneyPage() {
               </div>
             </>
           )}
+          {step === 'product' && !selectedProduct && (
+            <section className="customer-panel">
+              <h2>Produto indisponível</h2>
+              <p>Este produto foi desativado. Escolha outro item do cardápio.</p>
+              <button className="customer-primary" onClick={() => setStep('menu')}>Voltar ao cardápio</button>
+            </section>
+          )}
           <button
             className="customer-primary"
             onClick={() => {
@@ -481,12 +565,12 @@ export function CustomerJourneyPage() {
           <button className="customer-back" onClick={() => setStep(BACK_STEP[step] ?? 'menu')}><ArrowLeft size={16} /> Voltar</button>
           {step === 'brands' && (
             <div className="journey-options">
-              {brands.map((item) => (
+              {availableBrands.map((item) => (
                 <button key={item.id} onClick={() => { setBrand(item); setStep('flavors') }}>
                   <img {...catalogImage(item.image_url, `marcas/${slugify(item.name)}`)} alt="" />
                   <span>
                     <strong>{item.name}</strong>
-                    <small>{flavors.filter((entry) => entry.brand_id === item.id).length} sabores disponíveis</small>
+                    <small>{availableFlavors.filter((entry) => entry.brand_id === item.id).length} sabores disponíveis</small>
                   </span>
                   <ChevronRight size={17} />
                 </button>
@@ -508,7 +592,7 @@ export function CustomerJourneyPage() {
             <article className="journey-rosh-card">
               {rosh ? (
                 <>
-                  <img {...catalogImage(flavor.image_url)} alt={`Rosh ${flavor.name}`} />
+                  <img {...catalogImage(rosh.product.image_url || currentFlavor?.image_url)} alt={`Rosh ${currentFlavor?.name}`} />
                   <span>{brand?.name}</span>
                   <h2>Rosh</h2>
                   <p>Sabor {flavor.name}</p>
@@ -518,6 +602,7 @@ export function CustomerJourneyPage() {
                       addToCart({
                         product: rosh.product,
                         quantity: 1,
+                        selectedFlavorId: currentFlavor?.id,
                         variation: `${brand?.name ?? ''} ${flavor.name}`.trim(),
                         notes: rosh.exact ? undefined : flavorNote(brand ?? undefined, flavor),
                       })

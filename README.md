@@ -60,6 +60,7 @@ pytest -m "not integration"   # unitários (nunca acessam rede externa)
 pytest -m integration         # ponta a ponta no banco do DATABASE_URL (cria e apaga os próprios dados)
 
 cd ../frontend
+node --test tests/catalog.test.cjs  # regras de disponibilidade e sincronização do cardápio
 npm run lint                  # checagem de tipos
 npm run build
 ```
@@ -111,6 +112,13 @@ A API valida e reprocessa a foto antes de gravá-la junto com o produto no Postg
 `GET /products/{id}/image` serve a imagem pública; as listagens retornam apenas sua URL,
 sem carregar os bytes das fotos. Fotos já existentes no cardápio continuam funcionando.
 Publique a migração `d4e5f6a7b8c9` na API antes de usar o envio de fotos no frontend.
+
+O cardápio do cliente consulta o catálogo a cada 15 segundos e ao voltar à página.
+Produtos desativados, ou com categoria, sabor ou marca desativados, deixam de estar
+disponíveis. O carrinho atualiza preços e remove itens indisponíveis com aviso.
+Antes de enviar, o catálogo é consultado novamente; mudanças de disponibilidade ou
+preço exigem revisar o carrinho. A API também impede pedidos de produtos indisponíveis.
+Um Rosh de sabor explicitamente desativado não pode ser substituído pelo Rosh genérico.
 
 ## Segurança
 

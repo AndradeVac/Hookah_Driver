@@ -1,9 +1,12 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
+from app.models.category import Category
+from app.models.flavor import Flavor
+from app.models.brand import Brand
 
 
 class ProductRepository:
@@ -22,6 +25,13 @@ class ProductRepository:
         statement = select(Product).where(
             Product.id == product_id,
             Product.active.is_(True),
+            Product.category.has(Category.active.is_(True)),
+            or_(
+                Product.flavor_id.is_(None),
+                Product.flavor.has(
+                    Flavor.active.is_(True) & Flavor.brand.has(Brand.active.is_(True)),
+                ),
+            ),
         )
 
         return self.db.scalar(statement)

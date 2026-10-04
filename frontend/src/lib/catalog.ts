@@ -14,11 +14,12 @@ export function isRoshCategory(category?: Category | null) {
  * Rosh (no flavor) as fallback. Returns null when the flavor cannot be ordered.
  */
 export function findRoshProduct(products: Product[], categories: Category[], flavor: Flavor) {
-  const roshCategoryIds = new Set(categories.filter(isRoshCategory).map((category) => category.id))
-  const roshProducts = products.filter((product) => product.active && roshCategoryIds.has(product.category_id))
+  if (!flavor.active) return null
+  const roshCategoryIds = new Set(categories.filter((category) => category.active && isRoshCategory(category)).map((category) => category.id))
+  const roshProducts = products.filter((product) => roshCategoryIds.has(product.category_id))
   const exact = roshProducts.find((product) => product.flavor_id === flavor.id)
-  if (exact) return { product: exact, exact: true }
-  const generic = roshProducts.find((product) => product.flavor_id === null)
+  if (exact) return exact.active ? { product: exact, exact: true } : null
+  const generic = roshProducts.find((product) => product.active && product.flavor_id === null)
   return generic ? { product: generic, exact: false } : null
 }
 
