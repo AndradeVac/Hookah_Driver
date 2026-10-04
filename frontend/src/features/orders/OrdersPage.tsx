@@ -6,7 +6,7 @@ import { apiErrorMessage } from '../../services/api'
 import { getOrders, updateOrderStatus, type Order } from '../../services/orders'
 import type { OrderStatus } from '../../types'
 
-const REFRESH_INTERVAL_MS = 15_000
+const REFRESH_INTERVAL_MS = 5_000
 
 const columns: Array<{ status: OrderStatus; title: string; next?: OrderStatus; action?: string }> = [
   { status: 'AWAITING_PAYMENT', title: 'AGUARDANDO PAGAMENTO' },
@@ -59,7 +59,7 @@ export function OrdersPage() {
   return (
     <section className="page-content orders-page-shell">
       <div className="page-header orders-header">
-        <div><span className="eyebrow">Operação conectada</span><h1>Pedidos</h1><p>Atualizado automaticamente a cada 15 segundos</p></div>
+        <div><span className="eyebrow">Operação conectada</span><h1>Pedidos</h1><p>Atualizado automaticamente a cada 5 segundos</p></div>
         <button className="primary-button orders-new-button" type="button" onClick={() => navigate('/orders/new')}><Plus size={16} /> Novo pedido</button>
         <div className="pill-status">{orders.length} {orders.length === 1 ? 'pedido recente' : 'pedidos recentes'}</div>
       </div>

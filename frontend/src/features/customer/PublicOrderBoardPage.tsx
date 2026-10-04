@@ -6,7 +6,7 @@ import { logoImage } from '../../lib/images'
 import { apiErrorMessage } from '../../services/api'
 import { getPublicOrderBoard, type PublicOrderBoardItem } from '../../services/publicOrders'
 
-const REFRESH_INTERVAL_MS = 15_000
+const REFRESH_INTERVAL_MS = 5_000
 const columns = [
   { status: 'RECEIVED', title: 'Recebidos', icon: Clock },
   { status: 'PREPARING', title: 'Em preparo', icon: LoaderCircle },
@@ -54,7 +54,7 @@ export function PublicOrderBoardPage() {
         <Link className="customer-back" to="/cliente"><ArrowLeft size={16} /> Cardápio</Link>
       </header>
       <p className="customer-muted" role="status">
-        Atualização automática a cada 15 segundos{updatedAt && ` · Última atualização: ${formatTime(updatedAt)}`}
+        Atualização automática a cada 5 segundos{updatedAt && ` · Última atualização: ${formatTime(updatedAt)}`}
       </p>
       {error && <div className="api-error" role="alert"><AlertCircle size={16} />{error}{updatedAt && ' Os dados abaixo podem estar desatualizados.'}</div>}
       {loading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando pedidos...</div>
