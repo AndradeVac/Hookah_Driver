@@ -18,8 +18,8 @@ Contas de produção devem ser usadas no site da Vercel; o ambiente local usa a 
 - `ONLINE_PAYMENTS_ENABLED=false`: o cliente envia o pedido na confirmação, sem etapa de pagamento online.
 - O pedido entra como `RECEIVED` na tela autenticada `/orders`, usada pela equipe.
   A equipe aceita (`PREPARING`), marca como pronto (`READY`) e entrega (`FINISHED`), sem exigir pagamento online.
-- `/pedidos` mostra os números dos pedidos recebidos, em preparo e prontos, atualizados a cada 5 segundos.
-  A gestão em `/orders` também consulta os pedidos a cada 5 segundos.
+- `/pedidos` mostra os números dos pedidos recebidos, em preparo e prontos, atualizados a cada 2 segundos.
+  A gestão em `/orders` também consulta os pedidos a cada 2 segundos.
   Pedidos entregues, cancelados e aguardando pagamento não aparecem.
 - `GET /public/orders/board` é público e retorna somente `order_number`, `status` e `created_at`.
   Não expõe nomes, telefones, itens, valores ou tokens de acompanhamento.
