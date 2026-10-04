@@ -10,6 +10,9 @@ Cardápio digital (cliente pede pelo celular via QR Code e paga no balcão) e pa
 
 Rotas do frontend: `/cliente` (cardápio público), `/pedidos` (acompanhamento público), `/login` e o painel (`/`, `/orders`, ...).
 
+O login aceita o e-mail ou identificador cadastrado (inclusive `admin@admin`).
+Contas de produção devem ser usadas no site da Vercel; o ambiente local usa a API e o banco de desenvolvimento.
+
 ## Fluxo desta release
 
 - `ONLINE_PAYMENTS_ENABLED=false`: o cliente envia o pedido na confirmação, sem etapa de pagamento online.
