@@ -18,7 +18,8 @@ from app.services.user import UserService
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_orders_api_end_to_end():
+async def test_orders_api_end_to_end(monkeypatch):
+    monkeypatch.setattr("app.api.routes.public_orders.settings.online_payments_enabled", False)
     suffix = uuid4().hex[:8]
     order_ids = []
 
@@ -28,7 +29,8 @@ async def test_orders_api_end_to_end():
         )
         assert category is not None
 
-        customer = Customer(name=f"Integration Customer {suffix}")
+        customer_phone = f"119{uuid4().int % 100_000_000:08d}"
+        customer = Customer(name=f"Integration Customer {suffix}", phone=customer_phone)
         inactive_customer = Customer(
             name=f"Integration Inactive Customer {suffix}",
             active=False,
@@ -98,6 +100,46 @@ async def test_orders_api_end_to_end():
             )
             assert login.status_code == 200, login.text
             headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+            public_created = await client.post("/public/orders", json={
+                "customer_name": customer.name,
+                "customer_phone": customer_phone,
+                "payment_method": "PIX",
+                "items": [{"product_id": first_product_id, "quantity": 1}],
+            })
+            assert public_created.status_code == 201, public_created.text
+            public_order = public_created.json()
+            order_ids.append(public_order["order_id"])
+            assert public_order["status"] == "RECEIVED"
+            assert public_order["payment_status"] == "PENDING"
+            assert public_order["pix_qr_code"] is None
+            staff_orders = await client.get("/orders", headers=headers)
+            assert staff_orders.status_code == 200
+            assert any(order["id"] == public_order["order_id"] for order in staff_orders.json())
+
+            for status in ("RECEIVED", "PREPARING", "READY"):
+                if status != "RECEIVED":
+                    updated = await client.patch(
+                        f"/orders/{public_order['order_id']}/status",
+                        headers=headers, json={"status": status},
+                    )
+                    assert updated.status_code == 200, updated.text
+                    assert updated.json()["payment_status"] == "PENDING"
+                board = await client.get("/public/orders/board")
+                assert board.status_code == 200, board.text
+                entry = next(order for order in board.json() if order["order_number"] == public_order["order_number"])
+                assert entry["status"] == status
+                assert set(entry) == {"order_number", "status", "created_at"}
+                tracked = await client.get(f"/public/orders/{public_order['public_token']}")
+                assert tracked.status_code == 200
+                assert tracked.json()["status"] == status
+
+            delivered = await client.patch(
+                f"/orders/{public_order['order_id']}/status", headers=headers, json={"status": "FINISHED"},
+            )
+            assert delivered.status_code == 200, delivered.text
+            board = await client.get("/public/orders/board")
+            assert all(order["order_number"] != public_order["order_number"] for order in board.json())
 
             created = await client.post(
                 "/orders",

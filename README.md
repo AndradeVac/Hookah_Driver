@@ -1,14 +1,27 @@
 # Hookah Driver
 
-Cardápio digital (cliente pede e paga pelo celular via QR Code) e painel de gestão do lounge.
+Cardápio digital (cliente pede pelo celular via QR Code e paga no balcão) e painel de gestão do lounge.
 
 | Parte | Stack | Deploy |
 |---|---|---|
 | `backend/` | Python 3.12+, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 13+ | Render (`render.yaml`) |
 | `frontend/` | React 19, TypeScript, Vite | Vercel (`frontend/vercel.json`) |
-| Pagamentos | Mercado Pago (PIX e Checkout Pro) | webhook em `/payments/mercado-pago/webhook` |
+| Pagamentos online (desativados nesta release) | Mercado Pago (PIX e Checkout Pro) | webhook em `/payments/mercado-pago/webhook` |
 
-Rotas do frontend: `/cliente` (cardápio público), `/login` e o painel (`/`, `/orders`, ...).
+Rotas do frontend: `/cliente` (cardápio público), `/pedidos` (acompanhamento público), `/login` e o painel (`/`, `/orders`, ...).
+
+## Fluxo desta release
+
+- `ONLINE_PAYMENTS_ENABLED=false`: o cliente envia o pedido na confirmação, sem etapa de pagamento online.
+- O pedido entra como `RECEIVED` na tela autenticada `/orders`, usada pela equipe.
+  A equipe aceita (`PREPARING`), marca como pronto (`READY`) e entrega (`FINISHED`), sem exigir pagamento online.
+- `/pedidos` mostra os números dos pedidos recebidos, em preparo e prontos, atualizados a cada 15 segundos.
+  Pedidos entregues, cancelados e aguardando pagamento não aparecem.
+- `GET /public/orders/board` é público e retorna somente `order_number`, `status` e `created_at`.
+  Não expõe nomes, telefones, itens, valores ou tokens de acompanhamento.
+- O acompanhamento individual continua em `/cliente?token=<public_token>`; o link é salvo na URL ao confirmar.
+- A migração `c3d4e5f6a7b8` corrige o contador de pedidos após importações de dados, sem apagar registros
+  nem retroceder a numeração. Publique **também a API na Render**: atualizar apenas a Vercel não corrige o banco.
 
 ## Rodando localmente
 
@@ -64,6 +77,7 @@ Configure no painel da Render:
 | `JWT_SECRET_KEY` | gerada automaticamente (mín. 32 caracteres — a API não sobe sem ela) |
 | `FRONTEND_URL` | domínio(s) do frontend, separados por vírgula |
 | `APP_BASE_URL` | URL pública da API (`https://...`) |
+| `ONLINE_PAYMENTS_ENABLED` | `false` nesta release: pagamento no balcão |
 | `MERCADO_PAGO_ACCESS_TOKEN` / `MERCADO_PAGO_PUBLIC_KEY` | credenciais de produção |
 | `MERCADO_PAGO_WEBHOOK_SECRET` | "Assinatura secreta" do webhook no painel do Mercado Pago |
 

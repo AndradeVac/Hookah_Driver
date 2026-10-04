@@ -24,6 +24,8 @@ services:
         value: https://hookah-driver.vercel.app
       - key: APP_BASE_URL
         value: https://hookah-driver-api.onrender.com
+      - key: ONLINE_PAYMENTS_ENABLED
+        value: "false"
       - key: MERCADO_PAGO_ACCESS_TOKEN
         sync: false
       - key: MERCADO_PAGO_PUBLIC_KEY

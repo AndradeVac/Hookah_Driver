@@ -16,7 +16,13 @@ from app.repositories.customer import CustomerRepository
 from app.repositories.order import OrderRepository
 from app.schemas.audit import PublicHistoryItem, PublicHistoryOrder
 from app.schemas.order import OrderCreate, OrderItemCreate
-from app.schemas.public_order import PublicConfig, PublicOrderCreate, PublicOrderResponse, PublicOrderTracking
+from app.schemas.public_order import (
+    PublicConfig,
+    PublicOrderBoardItem,
+    PublicOrderCreate,
+    PublicOrderResponse,
+    PublicOrderTracking,
+)
 from app.services.order import OrderService
 from app.services.payment import PaymentGatewayError, PaymentService
 
@@ -150,6 +156,22 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
         response.payment_error = "Não foi possível gerar o pagamento agora. Avise a equipe do lounge."
 
     return response
+
+
+@router.get(
+    "/orders/board",
+    response_model=list[PublicOrderBoardItem],
+    dependencies=[Depends(public_lookup_rate_limit)],
+)
+def public_order_board(db: Session = Depends(get_db)):
+    return [
+        PublicOrderBoardItem(
+            order_number=order.order_number,
+            status=order.status,
+            created_at=order.created_at.isoformat(),
+        )
+        for order in OrderRepository(db).get_public_board()
+    ]
 
 
 @router.get(

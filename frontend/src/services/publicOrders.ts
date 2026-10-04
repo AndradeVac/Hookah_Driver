@@ -1,5 +1,16 @@
 import { api } from './api'
 
+export type PublicOrderBoardItem = {
+  order_number: number
+  status: 'RECEIVED' | 'PREPARING' | 'READY'
+  created_at: string
+}
+
+export async function getPublicOrderBoard() {
+  const { data } = await api.get<PublicOrderBoardItem[]>('/public/orders/board')
+  return data
+}
+
 export type PublicOrderResponse = {
   order_id: string
   order_number: number

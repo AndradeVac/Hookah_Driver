@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.models.order import PaymentMethod
+from app.models.order import OrderStatus, PaymentMethod
 
 
 def normalize_phone(value: str) -> str:
@@ -25,7 +25,7 @@ class PublicOrderItem(BaseModel):
 class PublicOrderCreate(BaseModel):
     customer_name: str = Field(min_length=2, max_length=120)
     customer_phone: str = Field(min_length=10, max_length=20)
-    payment_method: PaymentMethod = PaymentMethod.PIX
+    payment_method: PaymentMethod = PaymentMethod.CASH
     items: list[PublicOrderItem] = Field(min_length=1, max_length=30)
 
     @field_validator("customer_name")
@@ -69,3 +69,9 @@ class PublicOrderTracking(BaseModel):
 
 class PublicConfig(BaseModel):
     online_payments_enabled: bool
+
+
+class PublicOrderBoardItem(BaseModel):
+    order_number: int
+    status: OrderStatus
+    created_at: str

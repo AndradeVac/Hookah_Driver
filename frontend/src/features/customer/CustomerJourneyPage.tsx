@@ -101,7 +101,7 @@ function cartKey(item: CartItem) {
 }
 
 export function CustomerJourneyPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [step, setStep] = useState<Step>('register')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -281,6 +281,7 @@ export function CustomerJourneyPage() {
       setLastOrder(cart)
       setOrder(created)
       setStep('success')
+      setSearchParams({ token: created.public_token }, { replace: true })
       if (created.payment_error) setError(created.payment_error)
     } catch (err) {
       setError(apiErrorMessage(err, 'Não foi possível confirmar o pedido. Tente novamente.'))
@@ -294,6 +295,7 @@ export function CustomerJourneyPage() {
     setOrder(null)
     setError('')
     setStep('menu')
+    setSearchParams({}, { replace: true })
   }
 
   if (loading) {
@@ -566,20 +568,22 @@ export function CustomerJourneyPage() {
           <button className="customer-back" onClick={() => setStep('cart')}><ArrowLeft size={16} /> Carrinho</button>
           <h2>Confirmar seus dados</h2>
           <p className="customer-muted">{name.trim()} · {phone}</p>
-          <button className="customer-primary" onClick={() => setStep('payment')}>Continuar <ArrowRight size={16} /></button>
+          {!onlinePayments && <p className="customer-muted">Pagamento no balcão. Seu pedido será enviado direto para a equipe, sem pagamento online.</p>}
+          <div className="customer-total">Total <strong>{formatMoney(total)}</strong></div>
+          <button className="customer-primary" disabled={sending} onClick={() => onlinePayments ? setStep('payment') : void submit()}>
+            {sending ? 'Enviando...' : onlinePayments ? 'Continuar' : 'Enviar pedido'} <ArrowRight size={16} />
+          </button>
         </section>
       )}
 
-      {step === 'payment' && (
+      {step === 'payment' && onlinePayments && (
         <section className="customer-panel">
           <button className="customer-back" onClick={() => setStep('customer')}><ArrowLeft size={16} /> Dados</button>
           <h2>Pagamento</h2>
-          {onlinePayments
-            ? <div className="payment-choice"><button className="active" disabled>PIX</button></div>
-            : <p className="customer-muted">O pagamento é feito direto no lounge, com a nossa equipe, quando o pedido for entregue.</p>}
+          <div className="payment-choice"><button className="active" disabled>PIX</button></div>
           <div className="customer-total">Total <strong>{formatMoney(total)}</strong></div>
           <button className="customer-primary" disabled={sending} onClick={() => void submit()}>
-            {sending ? 'Enviando...' : onlinePayments ? 'Ir para pagamento' : 'Enviar pedido'} <Check size={16} />
+            {sending ? 'Enviando...' : 'Ir para pagamento'} <Check size={16} />
           </button>
         </section>
       )}
@@ -612,15 +616,20 @@ export function CustomerJourneyPage() {
           <span className={awaitingPayment ? 'status-label-pending' : ''}>{statusCopy.title}</span>
           <h2>Pedido #{order.order_number}</h2>
           <p>{statusCopy.text}</p>
+          {!onlinePayments && <p>Pagamento no balcão.</p>}
           <strong>{formatMoney(order.total)}</strong>
           <div className="customer-status-track">
             {STATUS_TRACK.filter((item) => onlinePayments || item.status !== 'AWAITING_PAYMENT').map((item) => <span key={item.status} className={order.status === item.status ? 'active' : ''}>{item.label}</span>)}
           </div>
+          <Link className="customer-back" to="/pedidos">Acompanhar todos os pedidos <ArrowRight size={16} /></Link>
           <button className="customer-primary" type="button" onClick={startNewOrder}>Voltar ao início</button>
         </section>
       )}
 
-      {step === 'menu' && <Link className="customer-credits" to="/creditos">Créditos das imagens</Link>}
+      {step === 'menu' && <>
+        <Link className="customer-credits" to="/pedidos">Acompanhar pedidos</Link>
+        <Link className="customer-credits" to="/creditos">Créditos das imagens</Link>
+      </>}
 
       {step !== 'register' && step !== 'success' && (
         <button className="customer-cart-button" onClick={() => setStep('cart')}>

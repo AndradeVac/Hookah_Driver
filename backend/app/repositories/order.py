@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, load_only, selectinload
 
 from app.models.order import Order, OrderStatus
 
@@ -35,6 +35,15 @@ class OrderRepository:
             .options(*_ORDER_LOAD_OPTIONS)
             .order_by(Order.created_at.desc())
             .limit(limit)
+        )
+        return list(self.db.scalars(statement).all())
+
+    def get_public_board(self) -> list[Order]:
+        statement = (
+            select(Order)
+            .options(load_only(Order.order_number, Order.status, Order.created_at))
+            .where(Order.status.in_((OrderStatus.RECEIVED, OrderStatus.PREPARING, OrderStatus.READY)))
+            .order_by(Order.created_at, Order.order_number)
         )
         return list(self.db.scalars(statement).all())
 

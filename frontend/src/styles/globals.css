@@ -2853,3 +2853,64 @@ img { max-width: 100%; }
 .credits-panel a {
   color: var(--accent);
 }
+
+.public-order-board {
+  min-height: 100vh;
+  padding: clamp(18px, 3vw, 48px);
+  background: var(--shell-bg);
+  color: var(--text);
+}
+.public-order-board .customer-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.public-board-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+.public-board-column {
+  min-width: 0;
+}
+.public-board-column h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: clamp(16px, 1.4vw, 24px);
+}
+.public-board-order {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+.public-board-order strong {
+  color: var(--accent);
+  font-size: clamp(32px, 4vw, 64px);
+}
+.public-board-order span {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.public-board-ready .orders-column-heading,
+.public-board-ready .public-board-order {
+  border-color: var(--success);
+}
+.public-board-ready h2,
+.public-board-ready .public-board-order strong {
+  color: var(--success);
+}
+@media (max-width: 760px) {
+  .public-board-columns {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,6 +1,7 @@
 import asyncio
 
 import httpx
+import pytest
 
 from app.main import app
 
@@ -92,7 +93,8 @@ def test_public_order_phone_is_normalized():
     assert order.customer_phone == "11999998888"
 
 
-def test_public_order_is_paid_in_person_when_online_payments_are_off(monkeypatch):
+@pytest.mark.parametrize("payment_method", [None, "PIX", "CARD", "CASH"])
+def test_public_order_is_paid_in_person_when_online_payments_are_off(monkeypatch, payment_method):
     from types import SimpleNamespace
     from uuid import uuid4
 
@@ -129,12 +131,14 @@ def test_public_order_is_paid_in_person_when_online_payments_are_off(monkeypatch
     app.dependency_overrides[get_db] = lambda: None
     try:
         config = request("/public/config")
-        response = request("/public/orders", "POST", json={
+        payload = {
             "customer_name": "Maria",
             "customer_phone": "11999998888",
-            "payment_method": "PIX",
             "items": [{"product_id": str(uuid4()), "quantity": 1}],
-        })
+        }
+        if payment_method is not None:
+            payload["payment_method"] = payment_method
+        response = request("/public/orders", "POST", json=payload)
     finally:
         app.dependency_overrides.pop(get_db, None)
 
@@ -142,3 +146,52 @@ def test_public_order_is_paid_in_person_when_online_payments_are_off(monkeypatch
     assert response.status_code == 201, response.text
     assert created == {"method": PaymentMethod.CASH, "status": OrderStatus.RECEIVED}
     assert response.json()["pix_qr_code"] is None
+    assert response.json()["payment_status"] == "PENDING"
+
+
+def test_public_board_exposes_only_order_numbers_status_and_time(monkeypatch):
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+
+    from app.core.database import get_db
+    from app.models.order import OrderStatus
+
+    orders = [
+        SimpleNamespace(
+            order_number=index, status=status, created_at=datetime(2026, 10, 4, tzinfo=timezone.utc),
+            customer_name="Private", customer_phone="11999998888", total="40.00", public_token="private",
+        )
+        for index, status in enumerate((OrderStatus.RECEIVED, OrderStatus.PREPARING, OrderStatus.READY), 1)
+    ]
+
+    class FakeOrders:
+        def __init__(self, db):
+            pass
+
+        def get_public_board(self):
+            return orders
+
+    monkeypatch.setattr("app.api.routes.public_orders.OrderRepository", FakeOrders)
+    app.dependency_overrides[get_db] = lambda: None
+    try:
+        response = request("/public/orders/board")
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert response.status_code == 200, response.text
+    assert [order["status"] for order in response.json()] == ["RECEIVED", "PREPARING", "READY"]
+    for order in response.json():
+        assert set(order) == {"order_number", "status", "created_at"}
+
+
+def test_public_board_handles_no_active_orders(monkeypatch):
+    from app.core.database import get_db
+
+    monkeypatch.setattr("app.api.routes.public_orders.OrderRepository.get_public_board", lambda self: [])
+    app.dependency_overrides[get_db] = lambda: None
+    try:
+        response = request("/public/orders/board")
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+    assert response.status_code == 200
+    assert response.json() == []
