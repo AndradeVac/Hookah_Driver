@@ -1,8 +1,11 @@
-from uuid import UUID
+import base64
+from hashlib import sha256
+from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundError
+from app.core.config import settings
 from app.models.product import Product
 from app.repositories.category import CategoryRepository
 from app.repositories.flavor import FlavorRepository
@@ -11,6 +14,17 @@ from app.schemas.product import ProductCreate, ProductUpdate
 
 
 class ProductService:
+
+    @staticmethod
+    def _set_image(product: Product, image_base64: str | None) -> None:
+        if image_base64 is None:
+            product.image_data = None
+            product.image_url = None
+            return
+        content = base64.b64decode(image_base64, validate=True)
+        product.image_data = content
+        version = sha256(content).hexdigest()[:16]
+        product.image_url = f"{settings.app_base_url.rstrip('/')}/products/{product.id}/image?v={version}"
 
     def __init__(self, db: Session):
         self.repository = ProductRepository(db)
@@ -36,6 +50,7 @@ class ProductService:
         self._validate_relationships(data.category_id, data.flavor_id)
 
         product = Product(
+            id=uuid4(),
             category_id=data.category_id,
             flavor_id=data.flavor_id,
             name=data.name,
@@ -44,6 +59,8 @@ class ProductService:
             price=data.price,
         )
 
+        if data.image_base64 is not None:
+            self._set_image(product, data.image_base64)
         self.repository.create(product)
         self.db.commit()
 
@@ -82,11 +99,15 @@ class ProductService:
         if data.name is not None:
             product.name = data.name
 
-        if data.description is not None:
+        if "description" in data.model_fields_set:
             product.description = data.description
 
         if "image_url" in data.model_fields_set:
             product.image_url = data.image_url
+            product.image_data = None
+
+        if "image_base64" in data.model_fields_set:
+            self._set_image(product, data.image_base64)
 
         if data.price is not None:
             product.price = data.price

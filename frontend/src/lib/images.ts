@@ -1,7 +1,7 @@
 import type { SyntheticEvent } from 'react'
 
-// All catalog images are WebP files under public/images (see design/IMAGENS.md).
-// The API stores their path in `image_url`; missing images fall back to one neutral placeholder.
+// Catalog images use static paths or API URLs for photos stored in PostgreSQL.
+// Missing images fall back to one neutral placeholder.
 export const PLACEHOLDER_IMAGE = '/images/placeholder.svg'
 
 export function slugify(value: string) {

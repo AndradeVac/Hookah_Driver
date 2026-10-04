@@ -23,6 +23,7 @@ export async function createProduct(payload: {
   flavor_id?: string
   name: string
   description?: string
+  image_base64?: string | null
   price: string
 }) {
   const { data } = await api.post<Product>('/products', payload)
@@ -34,7 +35,7 @@ export async function updateProductStatus(id: string, active: boolean) {
   return data
 }
 
-export async function updateProduct(id: string, payload: Partial<Pick<Product, 'name' | 'description' | 'price' | 'category_id' | 'flavor_id'>>) {
+export async function updateProduct(id: string, payload: Partial<Pick<Product, 'name' | 'description' | 'price' | 'category_id' | 'flavor_id'>> & { image_base64?: string | null }) {
   const { data } = await api.patch<Product>(`/products/${id}`, payload)
   return data
 }

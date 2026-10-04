@@ -3,9 +3,10 @@ from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.product_image import ProductImageInput
 
 
-class ProductCreate(BaseModel):
+class ProductCreate(ProductImageInput):
     category_id: UUID
     flavor_id: UUID | None = None
     name: str = Field(min_length=1, max_length=160)
@@ -14,7 +15,7 @@ class ProductCreate(BaseModel):
     price: Decimal = Field(ge=0, max_digits=10, decimal_places=2)
 
 
-class ProductUpdate(BaseModel):
+class ProductUpdate(ProductImageInput):
     category_id: UUID | None = None
     flavor_id: UUID | None = None
     name: str | None = Field(default=None, min_length=1, max_length=160)

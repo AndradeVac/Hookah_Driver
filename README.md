@@ -104,6 +104,14 @@ Saúde da API: `GET /health` (verifica o banco; usado pela Render).
 
 Padrão, nomes e fluxo para adicionar fotos: [`frontend/design/IMAGENS.md`](frontend/design/IMAGENS.md).
 
+Na tela `/products`, o administrador pode selecionar fotos do dispositivo ao cadastrar
+ou editar produtos, ver a prévia, trocar ou remover a imagem. São aceitos JPG, PNG e WebP
+de até 10 MB; o navegador otimiza para WebP estático, até 1200 pixels por lado e 256 KB.
+A API valida e reprocessa a foto antes de gravá-la junto com o produto no PostgreSQL.
+`GET /products/{id}/image` serve a imagem pública; as listagens retornam apenas sua URL,
+sem carregar os bytes das fotos. Fotos já existentes no cardápio continuam funcionando.
+Publique a migração `d4e5f6a7b8c9` na API antes de usar o envio de fotos no frontend.
+
 ## Segurança
 
 - Rotas de clientes, pedidos, relatórios, usuários e auditoria exigem login (ADMIN/OPERATOR).

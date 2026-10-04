@@ -1,9 +1,11 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.exceptions import NotFoundError
 from app.core.security import require_roles
 from app.models.user import User, UserRole
 from app.schemas.product import (
@@ -12,6 +14,7 @@ from app.schemas.product import (
     ProductUpdate,
 )
 from app.services.product import ProductService
+from app.repositories.product import ProductRepository
 
 
 router = APIRouter(
@@ -65,6 +68,18 @@ def update_product(
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
     return ProductService(db).update(product_id, data)
+
+
+@router.get("/{product_id}/image")
+def get_product_image(product_id: UUID, db: Session = Depends(get_db)):
+    product = ProductRepository(db).get_by_id_any_status(product_id)
+    if product is None or product.image_data is None:
+        raise NotFoundError("Foto do produto não encontrada.")
+    return Response(
+        content=product.image_data,
+        media_type="image/webp",
+        headers={"Cache-Control": "public, max-age=3600", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 @router.delete(

@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Index,
+    LargeBinary,
     Numeric,
     String,
     Text,
@@ -23,6 +24,10 @@ class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
         CheckConstraint("price >= 0", name="chk_products_price"),
+        CheckConstraint(
+            "image_data IS NULL OR octet_length(image_data) <= 262144",
+            name="chk_products_image_size",
+        ),
         Index("idx_products_active", "active"),
         Index("idx_products_category_id", "category_id"),
         Index("idx_products_flavor_id", "flavor_id"),
@@ -59,6 +64,12 @@ class Product(Base):
     image_url: Mapped[str | None] = mapped_column(
         String,
         nullable=True,
+    )
+
+    image_data: Mapped[bytes | None] = mapped_column(
+        LargeBinary,
+        nullable=True,
+        deferred=True,
     )
 
     price: Mapped[Decimal] = mapped_column(

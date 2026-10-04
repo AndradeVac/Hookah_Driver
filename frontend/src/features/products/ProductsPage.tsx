@@ -9,10 +9,15 @@ import {
   LoaderCircle,
   Plus,
   Save,
+  Search,
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { formatMoney } from "../../lib/format";
+import { isRoshCategory as categoryIsRosh } from "../../lib/catalog";
+import { catalogImage } from "../../lib/images";
+import { apiErrorMessage } from "../../services/api";
+import { ProductPhotoInput } from "./ProductPhotoInput";
 import { getCategories, type Category } from "../../services/categories";
 import { getBrands, type Brand } from "../../services/brands";
 import { getFlavors, type Flavor } from "../../services/flavors";
@@ -35,6 +40,11 @@ export function ProductsPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [imageBase64, setImageBase64] = useState<string | null | undefined>();
+  const [editImageBase64, setEditImageBase64] = useState<string | null | undefined>();
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterCategoryId, setFilterCategoryId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -54,9 +64,9 @@ export function ProductsPage() {
           const activeCategories = loadedCategories.filter(
             (category) => category.active,
           );
-          setCategories(activeCategories);
-          setBrands(loadedBrands.filter((brand) => brand.active));
-          setFlavors(loadedFlavors.filter((flavor) => flavor.active));
+          setCategories(loadedCategories);
+          setBrands(loadedBrands);
+          setFlavors(loadedFlavors);
           setCategoryId(activeCategories[0]?.id ?? "");
           setBrandId(loadedBrands.find((brand) => brand.active)?.id ?? "");
         },
@@ -71,7 +81,8 @@ export function ProductsPage() {
       !categoryId ||
       (!isRoshCategory && !name.trim()) ||
       (isRoshCategory && !flavorId) ||
-      !price
+      !price ||
+      photoBusy
     )
       return;
 
@@ -84,15 +95,17 @@ export function ProductsPage() {
         name: isRoshCategory ? "Rosh" : name.trim(),
         price: price.replace(",", "."),
         description: description.trim() || undefined,
+        image_base64: imageBase64,
       });
       setProducts((current) => [...current, product]);
       setName("");
       setPrice("");
       setDescription("");
       setFlavorId("");
-    } catch {
+      setImageBase64(undefined);
+    } catch (err) {
       setError(
-        "Não foi possível criar o produto. Confira a categoria e o preço.",
+        apiErrorMessage(err, "Não foi possível criar o produto. Confira a categoria, o preço e a foto."),
       );
     } finally {
       setIsSaving(false);
@@ -122,9 +135,11 @@ export function ProductsPage() {
     setEditName(product.name);
     setEditPrice(product.price);
     setEditDescription(product.description ?? "");
+    setEditImageBase64(undefined);
   }
 
   async function saveProduct(product: Product) {
+    if (photoBusy || !editName.trim() || !editPrice) return;
     setUpdatingId(product.id);
     setError("");
     try {
@@ -132,22 +147,31 @@ export function ProductsPage() {
         name: editName.trim(),
         price: editPrice.replace(",", "."),
         description: editDescription.trim() || null,
+        image_base64: editImageBase64,
       });
       setProducts((current) =>
         current.map((item) => (item.id === product.id ? updated : item)),
       );
       setEditingId(null);
-    } catch {
-      setError("Não foi possível salvar o produto.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Não foi possível salvar o produto."));
     } finally {
       setUpdatingId(null);
     }
   }
 
   const inactiveCount = products.filter((product) => !product.active).length;
-  const visibleProducts = showAll
-    ? products
-    : products.filter((product) => product.active);
+  const productLabel = (product: Product) => {
+    const flavor = flavors.find((item) => item.id === product.flavor_id);
+    const brand = brands.find((item) => item.id === flavor?.brand_id);
+    return flavor ? `${product.name} · ${brand?.name ?? ""} ${flavor.name}`.trim() : product.name;
+  };
+  const activeCategories = categories.filter((category) => category.active);
+  const statusProducts = showAll ? products : products.filter((product) => product.active);
+  const visibleProducts = statusProducts.filter((product) =>
+    (!filterCategoryId || product.category_id === filterCategoryId) &&
+    `${productLabel(product)} ${product.description ?? ""}`.toLocaleLowerCase("pt-BR").includes(search.trim().toLocaleLowerCase("pt-BR")),
+  );
   const productsByCategory = useMemo(
     () =>
       categories
@@ -162,11 +186,8 @@ export function ProductsPage() {
   );
   const displayCategoryName = (category: Category) =>
     category.name.toLowerCase() === "essências" ? "Rosh" : category.name;
-  const isRoshCategory =
-    categories
-      .find((category) => category.id === categoryId)
-      ?.name.toLowerCase() === "rosh";
-  const brandFlavors = flavors.filter((flavor) => flavor.brand_id === brandId);
+  const isRoshCategory = categoryIsRosh(categories.find((category) => category.id === categoryId));
+  const brandFlavors = flavors.filter((flavor) => flavor.active && flavor.brand_id === brandId);
 
   return (
     <section className="page-content simple-page products-page">
@@ -174,7 +195,7 @@ export function ProductsPage() {
         <div>
           <span className="eyebrow">Catálogo conectado</span>
           <h1>Produtos</h1>
-          <p>Cadastre vários itens dentro de cada categoria.</p>
+          <p>Gerencie produtos, preços e fotos do cardápio.</p>
         </div>
       </div>
       {error && (
@@ -190,12 +211,13 @@ export function ProductsPage() {
             id="product-category"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
-            disabled={categories.length === 0}
+            aria-label="Categoria do novo produto"
+            disabled={activeCategories.length === 0}
           >
-            {categories.length === 0 ? (
+            {activeCategories.length === 0 ? (
               <option value="">Nenhuma categoria ativa</option>
             ) : (
-              categories.map((category) => (
+              activeCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -212,7 +234,7 @@ export function ProductsPage() {
                 }}
               >
                 <option value="">Selecione a marca</option>
-                {brands.map((brand) => (
+                {brands.filter((brand) => brand.active).map((brand) => (
                   <option key={brand.id} value={brand.id}>
                     {brand.name}
                   </option>
@@ -236,6 +258,7 @@ export function ProductsPage() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Ex.: Coca-Cola"
+              aria-label="Nome do novo produto"
               maxLength={120}
             />
           )}
@@ -243,12 +266,14 @@ export function ProductsPage() {
             value={price}
             onChange={(event) => setPrice(event.target.value)}
             placeholder="Preço"
+            aria-label="Preço do novo produto"
             inputMode="decimal"
           />
           <input
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Descrição (opcional)"
+            aria-label="Descrição do novo produto"
             maxLength={500}
           />
           <button
@@ -256,6 +281,7 @@ export function ProductsPage() {
             type="submit"
             disabled={
               isSaving ||
+              photoBusy ||
               !categoryId ||
               (!isRoshCategory && !name.trim()) ||
               (isRoshCategory && !flavorId) ||
@@ -270,12 +296,13 @@ export function ProductsPage() {
             {isSaving ? "Salvando..." : "Adicionar produto"}
           </button>
         </div>
+        <ProductPhotoInput value={imageBase64} onChange={setImageBase64} onBusyChange={setPhotoBusy} disabled={isSaving || updatingId !== null || photoBusy} />
       </form>
       <div className="resource-list">
         <div className="resource-list-header">
           <div>
             <strong>{showAll ? "Todos os produtos" : "Produtos ativos"}</strong>
-            <span>{visibleProducts.length} registros</span>
+            <span>{visibleProducts.length} de {statusProducts.length} produtos</span>
           </div>
           <button
             className="resource-filter"
@@ -297,6 +324,14 @@ export function ProductsPage() {
             </button>
           )}
         </div>
+        {listOpen && <div className="product-list-filters">
+          <label><Search size={16} /><input aria-label="Buscar produtos" placeholder="Buscar produto, marca ou sabor" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+          <select aria-label="Filtrar categoria" value={filterCategoryId} onChange={(event) => setFilterCategoryId(event.target.value)}>
+            <option value="">Todas as categorias</option>
+            {categories.map((category) => <option value={category.id} key={category.id}>{displayCategoryName(category)}</option>)}
+          </select>
+          {(search || filterCategoryId) && <button type="button" className="resource-filter" onClick={() => { setSearch(""); setFilterCategoryId(""); }}><X size={14} /> Limpar filtros</button>}
+        </div>}
         {listOpen &&
           (isLoading ? (
             <div className="resource-state">
@@ -305,7 +340,7 @@ export function ProductsPage() {
             </div>
           ) : productsByCategory.length === 0 ? (
             <div className="resource-state">
-              Nenhum produto cadastrado ainda.
+              {statusProducts.length ? "Nenhum produto encontrado para os filtros selecionados." : showAll ? "Nenhum produto cadastrado ainda." : "Nenhum produto ativo."}
             </div>
           ) : (
             productsByCategory.map(
@@ -318,18 +353,20 @@ export function ProductsPage() {
                       {categoryProducts.length === 1 ? "item" : "itens"}
                     </span>
                   </div>
-                  {categoryProducts.map((product) =>
+                  <div className="product-catalog-grid">{categoryProducts.map((product) =>
                     editingId === product.id ? (
                       <article
                         className="resource-row product-edit-row"
                         key={product.id}
                       >
                         <input
+                          maxLength={160}
                           value={editName}
                           onChange={(event) => setEditName(event.target.value)}
                           aria-label="Nome do produto"
                         />
                         <input
+                          maxLength={1000}
                           value={editDescription}
                           onChange={(event) =>
                             setEditDescription(event.target.value)
@@ -342,11 +379,12 @@ export function ProductsPage() {
                           aria-label="Preço do produto"
                           inputMode="decimal"
                         />
+                        <ProductPhotoInput currentUrl={product.image_url} value={editImageBase64} onChange={setEditImageBase64} onBusyChange={setPhotoBusy} disabled={updatingId !== null || isSaving || photoBusy} />
                         <button
                           className="icon-success"
                           type="button"
                           onClick={() => void saveProduct(product)}
-                          disabled={updatingId === product.id}
+                          disabled={updatingId === product.id || photoBusy || !editName.trim() || !editPrice}
                           aria-label="Salvar produto"
                         >
                           {updatingId === product.id ? (
@@ -359,6 +397,7 @@ export function ProductsPage() {
                           className="icon-danger"
                           type="button"
                           onClick={() => setEditingId(null)}
+                          disabled={updatingId === product.id || photoBusy}
                           aria-label="Cancelar edição"
                         >
                           <X size={16} />
@@ -366,36 +405,32 @@ export function ProductsPage() {
                       </article>
                     ) : (
                       <article
-                        className="resource-row"
+                        className="resource-row product-catalog-card"
                         key={product.id}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                        }}
                       >
-                        <div style={{ flex: 1 }}>
-                          <strong>{product.name}</strong>
+                        <img className="product-catalog-photo" {...catalogImage(product.image_url)} alt={productLabel(product)} />
+                        <div className="product-catalog-details">
+                          <strong>{productLabel(product)}</strong>
+                          <span className={product.active ? "status-active" : "status-inactive"}>{product.active ? "Ativo" : "Inativo"}</span>
                           <span
-                            className={product.active ? "" : "status-inactive"}
-                            style={{ display: "block" }}
+                            className="product-catalog-description"
                           >
                             {product.description ||
                               (product.active ? "Sem descrição" : "Inativo")}
                           </span>
                           <b
                             className="product-price"
-                            style={{ display: "block", marginTop: "6px" }}
                           >
                             {formatMoney(product.price)}
                           </b>
                         </div>
-                        <div style={{ display: "flex", gap: "8px" }}>
+                        <div className="product-catalog-actions">
                           <button
                             className="icon-edit"
                             type="button"
                             onClick={() => startEditing(product)}
-                            aria-label={`Editar ${product.name}`}
+                            disabled={photoBusy || updatingId !== null || isSaving}
+                            aria-label={`Editar ${productLabel(product)}`}
                           >
                             <Edit3 size={15} />
                           </button>
@@ -405,8 +440,8 @@ export function ProductsPage() {
                             }
                             type="button"
                             onClick={() => void handleStatusChange(product)}
-                            disabled={updatingId === product.id}
-                            aria-label={`${product.active ? "Desativar" : "Ativar"} ${product.name}`}
+                            disabled={updatingId !== null || photoBusy || isSaving}
+                            aria-label={`${product.active ? "Desativar" : "Ativar"} ${productLabel(product)}`}
                           >
                             {updatingId === product.id ? (
                               <LoaderCircle className="spin" size={16} />
@@ -419,7 +454,7 @@ export function ProductsPage() {
                         </div>
                       </article>
                     ),
-                  )}
+                  )}</div>
                 </div>
               ),
             )
