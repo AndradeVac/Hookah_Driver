@@ -5,6 +5,8 @@ import { AppRouter } from "./app/router";
 import { Providers } from "./app/providers";
 import "./styles/globals.css";
 
+console.info("[Hookah Driver] Frontend iniciado");
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Providers>
