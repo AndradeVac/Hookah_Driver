@@ -68,17 +68,28 @@ class OrderRepository:
 
     def delete(self, order_id: UUID) -> bool:
         """Delete a specific order by ID."""
-        statement = select(Order).where(Order.id == order_id)
-        order = self.db.scalar(statement)
-        if order:
-            self.db.delete(order)
-            return True
-        return False
+        from sqlalchemy import delete
+        from app.models.order_item import OrderItem
+        from app.models.order_status_history import OrderStatusHistory
+        
+        # First, delete related items and status history
+        self.db.execute(delete(OrderItem).where(OrderItem.order_id == order_id))
+        self.db.execute(delete(OrderStatusHistory).where(OrderStatusHistory.order_id == order_id))
+        
+        # Then delete the order
+        result = self.db.execute(delete(Order).where(Order.id == order_id))
+        return result.rowcount > 0
 
     def delete_all(self) -> int:
         """Delete all orders. Returns the count of deleted orders."""
-        statement = select(Order)
-        orders = list(self.db.scalars(statement).all())
-        for order in orders:
-            self.db.delete(order)
-        return len(orders)
+        from sqlalchemy import delete
+        from app.models.order_item import OrderItem
+        from app.models.order_status_history import OrderStatusHistory
+        
+        # Delete items first (cascading manually)
+        self.db.execute(delete(OrderItem))
+        self.db.execute(delete(OrderStatusHistory))
+        
+        # Then delete orders
+        result = self.db.execute(delete(Order))
+        return result.rowcount
