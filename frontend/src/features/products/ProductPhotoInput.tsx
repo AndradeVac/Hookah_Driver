@@ -1,4 +1,4 @@
-import { LoaderCircle, X } from 'lucide-react'
+import { ImagePlus, LoaderCircle, X } from 'lucide-react'
 import { useState } from 'react'
 import { catalogImage } from '../../lib/images'
 
@@ -49,8 +49,10 @@ export function ProductPhotoInput({ currentUrl, value, onChange, onBusyChange, d
     <div className="product-photo-input">
       <img {...catalogImage(preview)} alt="Prévia da foto do produto" />
       <div>
-        <label>
-          Foto do produto
+        <span className="photo-title">Foto do produto</span>
+        <label className={`photo-picker ${disabled || busy ? 'photo-picker-disabled' : ''}`}>
+          <ImagePlus size={16} />
+          {preview ? 'Trocar foto' : 'Escolher foto'}
           <input type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled || busy}
             onChange={async (event) => {
               const file = event.target.files?.[0]
