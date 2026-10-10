@@ -49,8 +49,13 @@ class AnalyticsService:
         return start, end
 
     def _filters(self, period: str, custom_start: datetime | None = None, custom_end: datetime | None = None):
-        if custom_start is not None and custom_end is not None:
-            return [Order.status.not_in(_EXCLUDED_STATUSES), Order.created_at >= custom_start, Order.created_at < custom_end], custom_start, custom_end
+        if custom_start is not None or custom_end is not None:
+            conditions = [Order.status.not_in(_EXCLUDED_STATUSES)]
+            if custom_start is not None:
+                conditions.append(Order.created_at >= custom_start)
+            if custom_end is not None:
+                conditions.append(Order.created_at < custom_end)
+            return conditions, custom_start, custom_end
         start, end = self.period_bounds(period)
         conditions = [Order.status.not_in(_EXCLUDED_STATUSES)]
         if start is not None:
@@ -160,12 +165,14 @@ class AnalyticsService:
             revenue_change_percent=revenue_change_percent,
         )
 
-    def export_xlsx(self, period: str) -> bytes:
-        dashboard = self.dashboard(period)
+    def export_xlsx(self, period: str, start: datetime | None = None, end: datetime | None = None) -> bytes:
+        dashboard = self.dashboard(period, start, end)
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = "Resumo"
         sheet.append(["Período", dashboard.period])
+        if dashboard.period_start or dashboard.period_end:
+            sheet.append(["Intervalo", f"{dashboard.period_start or '-'} até {dashboard.period_end or '-'}"])
         sheet.append(["Faturamento", float(dashboard.revenue)])
         sheet.append(["Pedidos", dashboard.order_count])
         sheet.append(["Ticket médio", float(dashboard.average_ticket)])
@@ -177,8 +184,8 @@ class AnalyticsService:
         workbook.save(output)
         return output.getvalue()
 
-    def export_pdf(self, period: str) -> bytes:
-        dashboard = self.dashboard(period)
+    def export_pdf(self, period: str, start: datetime | None = None, end: datetime | None = None) -> bytes:
+        dashboard = self.dashboard(period, start, end)
         output = BytesIO()
         document = canvas.Canvas(output, pagesize=A4)
         document.setTitle("Hookah Driver - Dashboard")

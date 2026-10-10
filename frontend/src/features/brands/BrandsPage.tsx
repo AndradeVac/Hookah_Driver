@@ -101,7 +101,7 @@ export function BrandsPage() {
           visibleBrands.map((brand) => (
             <article className="resource-row" key={brand.id}>
               <div><strong>{brand.name}</strong><span className={brand.active ? 'status-active' : 'status-inactive'}>{brand.active ? 'Ativa' : 'Inativa'}</span></div>
-              <button className={brand.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(brand)} disabled={updatingId === brand.id} aria-label={`${brand.active ? 'Desativar' : 'Ativar'} ${brand.name}`}>
+              <button className={brand.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(brand)} disabled={updatingId === brand.id} title={`${brand.active ? 'Desativar' : 'Ativar'} ${brand.name}`} aria-label={`${brand.active ? 'Desativar' : 'Ativar'} ${brand.name}`}>
                 {updatingId === brand.id ? <LoaderCircle className="spin" size={16} /> : brand.active ? <CircleOff size={16} /> : <Check size={16} />}
               </button>
             </article>

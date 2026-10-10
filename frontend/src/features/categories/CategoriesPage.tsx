@@ -79,7 +79,7 @@ export function CategoriesPage() {
         {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando catálogo...</div> : visibleCategories.length === 0 ? <div className="resource-state">Nenhuma categoria ativa cadastrada.</div> : visibleCategories.map((category) => (
           <article className="resource-row" key={category.id}>
             <div><strong>{category.name}</strong><span className={category.active ? 'status-active' : 'status-inactive'}>{category.active ? 'Ativa' : 'Inativa'}</span></div>
-            <button className={category.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(category)} disabled={updatingId === category.id} aria-label={`${category.active ? 'Desativar' : 'Ativar'} ${category.name}`}>
+            <button className={category.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(category)} disabled={updatingId === category.id} title={`${category.active ? 'Desativar' : 'Ativar'} ${category.name}`} aria-label={`${category.active ? 'Desativar' : 'Ativar'} ${category.name}`}>
               {updatingId === category.id ? <LoaderCircle className="spin" size={16} /> : category.active ? <CircleOff size={16} /> : <Check size={16} />}
             </button>
           </article>

@@ -62,7 +62,7 @@ export function CustomersPage() {
         <label htmlFor="customer-name">Novo cliente</label>
         <div className="product-form-grid customer-form-grid">
           <input id="customer-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome completo" maxLength={150} />
-          <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Telefone (opcional)" maxLength={30} />
+          <input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Telefone (opcional)" aria-label="Telefone" maxLength={30} />
           <button className="primary-button resource-submit" type="submit" disabled={isSaving || !name.trim()}>
             {isSaving ? <LoaderCircle className="spin" size={16} /> : <Plus size={16} />}
             {isSaving ? 'Salvando...' : 'Adicionar cliente'}
@@ -79,7 +79,7 @@ export function CustomersPage() {
         {listOpen && (isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando clientes...</div> : visibleCustomers.length === 0 ? <div className="resource-state">Nenhum cliente encontrado.</div> : visibleCustomers.map((customer) => (
           <article className="resource-row customer-row" key={customer.id}>
             <div><strong>{customer.name}</strong><span className={customer.active ? 'status-active' : 'status-inactive'}>{customer.phone || 'Sem telefone'} · {customer.active ? 'Ativo' : 'Inativo'}</span></div>
-            <button className={customer.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(customer)} disabled={updatingId === customer.id} aria-label={`${customer.active ? 'Desativar' : 'Ativar'} ${customer.name}`}>{updatingId === customer.id ? <LoaderCircle className="spin" size={16} /> : customer.active ? <CircleOff size={16} /> : <Check size={16} />}</button>
+            <button className={customer.active ? 'icon-danger' : 'icon-success'} type="button" onClick={() => void handleStatusChange(customer)} disabled={updatingId === customer.id} title={`${customer.active ? 'Desativar' : 'Ativar'} ${customer.name}`} aria-label={`${customer.active ? 'Desativar' : 'Ativar'} ${customer.name}`}>{updatingId === customer.id ? <LoaderCircle className="spin" size={16} /> : customer.active ? <CircleOff size={16} /> : <Check size={16} />}</button>
           </article>
         )))}
       </div>

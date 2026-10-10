@@ -21,12 +21,14 @@ export async function getDashboardAnalytics(period: AnalyticsPeriod, start?: str
   return data
 }
 
-export async function downloadDashboardExport(period: AnalyticsPeriod, format: 'xlsx' | 'pdf') {
-  const response = await api.get<Blob>('/analytics/dashboard/export', { params: { period, format }, responseType: 'blob' })
+export async function downloadDashboardExport(period: AnalyticsPeriod, format: 'xlsx' | 'pdf', start?: string, end?: string) {
+  const response = await api.get<Blob>('/analytics/dashboard/export', { params: { period, format, start: start || undefined, end: end || undefined }, responseType: 'blob' })
   const url = URL.createObjectURL(response.data)
   const link = document.createElement('a')
   link.href = url
   link.download = `hookah-dashboard-${period}.${format}`
+  document.body.appendChild(link)
   link.click()
-  URL.revokeObjectURL(url)
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
 }

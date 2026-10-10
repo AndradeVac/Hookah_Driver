@@ -430,6 +430,7 @@ export function ProductsPage() {
                             type="button"
                             onClick={() => startEditing(product)}
                             disabled={photoBusy || updatingId !== null || isSaving}
+                            title={`Editar ${productLabel(product)}`}
                             aria-label={`Editar ${productLabel(product)}`}
                           >
                             <Edit3 size={15} />
@@ -441,6 +442,7 @@ export function ProductsPage() {
                             type="button"
                             onClick={() => void handleStatusChange(product)}
                             disabled={updatingId !== null || photoBusy || isSaving}
+                            title={`${product.active ? "Desativar" : "Ativar"} ${productLabel(product)}`}
                             aria-label={`${product.active ? "Desativar" : "Ativar"} ${productLabel(product)}`}
                           >
                             {updatingId === product.id ? (

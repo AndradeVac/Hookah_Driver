@@ -2,6 +2,7 @@ import { AlertCircle, ArrowRight, LoaderCircle, Plus, Search, Trash2, X } from '
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { formatMoney, formatTime, paymentMethodLabels } from '../../lib/format'
 import { apiErrorMessage } from '../../services/api'
 import { deleteAllOrders, deleteOrder, getOrders, updateOrderStatus, type Order } from '../../services/orders'
@@ -15,6 +16,7 @@ const columns: Array<{ status: OrderStatus; title: string; next?: OrderStatus; a
   { status: 'PREPARING', title: 'EM PREPARO', next: 'READY', action: 'Marcar como pronto' },
   { status: 'READY', title: 'PRONTOS', next: 'FINISHED', action: 'Entregar' },
   { status: 'FINISHED', title: 'FINALIZADOS' },
+  { status: 'CANCELLED', title: 'CANCELADOS' },
 ]
 
 type DeleteTarget = Order | 'ALL'
@@ -41,13 +43,6 @@ export function OrdersPage() {
     const refresh = window.setInterval(() => void loadBoard(), REFRESH_INTERVAL_MS)
     return () => { active = false; window.clearInterval(refresh) }
   }, [])
-
-  useEffect(() => {
-    if (!deleteTarget) return
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape' && !isDeleting) setDeleteTarget(null) }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [deleteTarget, isDeleting])
 
   async function advanceOrder(order: Order, nextStatus?: OrderStatus) {
     if (!nextStatus) return
@@ -94,6 +89,7 @@ export function OrdersPage() {
 
   const hasFilters = Boolean(search) || statusFilter !== 'ALL'
   const deleteAll = deleteTarget === 'ALL'
+  const boardColumns = columns.filter((column) => column.status !== 'CANCELLED' || orders.some((order) => order.status === 'CANCELLED'))
 
   return (
     <section className="page-content orders-page-shell">
@@ -121,24 +117,18 @@ export function OrdersPage() {
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
 
       {deleteTarget && (
-        <div className="modal-overlay" role="presentation" onClick={() => { if (!isDeleting) setDeleteTarget(null) }}>
-          <div className="modal-content modal-danger" role="alertdialog" aria-modal="true" aria-labelledby="delete-title" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-icon"><Trash2 size={28} /></div>
-            <h2 id="delete-title">{deleteAll ? 'Remover todos os pedidos?' : `Remover o pedido #${deleteTarget.order_number}?`}</h2>
-            <p>
-              {deleteAll
-                ? <>Você está prestes a remover <strong>{orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}</strong>. Esta ação não pode ser desfeita.</>
-                : <>O pedido de <strong>{deleteTarget.customer_name ?? 'Cliente'}</strong> será removido. Esta ação não pode ser desfeita.</>}
-            </p>
-            <div className="modal-actions">
-              <button type="button" className="secondary-button" onClick={() => setDeleteTarget(null)} disabled={isDeleting} autoFocus>Cancelar</button>
-              <button type="button" className="danger-button" onClick={() => void confirmDelete()} disabled={isDeleting}>
-                {isDeleting ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}
-                {isDeleting ? 'Removendo...' : deleteAll ? 'Remover todos' : 'Remover pedido'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          icon={<Trash2 size={28} />}
+          title={deleteAll ? 'Remover todos os pedidos?' : `Remover o pedido #${deleteTarget.order_number}?`}
+          description={deleteAll
+            ? <>Você está prestes a remover <strong>{orders.length} {orders.length === 1 ? 'pedido' : 'pedidos'}</strong>. Esta ação não pode ser desfeita.</>
+            : <>O pedido de <strong>{deleteTarget.customer_name ?? 'Cliente'}</strong> será removido. Esta ação não pode ser desfeita.</>}
+          confirmLabel={deleteAll ? 'Remover todos' : 'Remover pedido'}
+          busyLabel="Removendo..."
+          isBusy={isDeleting}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
 
       <div className="orders-filters">
@@ -153,12 +143,13 @@ export function OrdersPage() {
           <option value="PREPARING">Em preparo</option>
           <option value="READY">Prontos</option>
           <option value="FINISHED">Finalizados</option>
+          <option value="CANCELLED">Cancelados</option>
         </select>
         {hasFilters && <button type="button" onClick={() => { setSearch(''); setStatusFilter('ALL') }}><X size={14} /> Limpar filtros</button>}
       </div>
 
       {isLoading ? <div className="resource-state"><LoaderCircle className="spin" size={20} />Carregando pedidos...</div> : <div className="orders-columns">
-        {columns.map((column) => {
+        {boardColumns.map((column) => {
           const columnOrders = filteredOrders.filter((order) => order.status === column.status)
           return <div key={column.status} className="orders-column">
             <div className="orders-column-heading"><h3>{column.title}</h3><span>{columnOrders.length}</span></div>

@@ -192,7 +192,7 @@ class OrderService:
         try:
             deleted_count = self.repository.delete_all()
             
-            if actor is not None:
+            if actor is not None and deleted_count > 0:
                 self.db.add(AuditLog(
                     actor_user_id=actor.id,
                     action="ORDERS_CLEARED",

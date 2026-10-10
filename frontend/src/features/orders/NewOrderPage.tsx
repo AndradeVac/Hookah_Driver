@@ -118,26 +118,28 @@ export function NewOrderPage() {
           {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</option>)}
         </select>
         <label htmlFor="order-category">Adicionar item</label>
-        <select id="order-category" className="new-order-select" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setProductId('') }}>
-          {categories.map((category) => <option key={category.id} value={category.id}>{isRoshCategory(category) ? 'Rosh' : category.name}</option>)}
-        </select>
-        {roshSelected ? <div className="new-order-essence-fields">
-          <select className="new-order-select" value={brandId} onChange={(event) => { setBrandId(event.target.value); setFlavorId('') }} aria-label="Marca">
-            <option value="">Selecione a marca</option>
-            {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+        <div className="new-order-picker">
+          <select id="order-category" className="new-order-select" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setProductId('') }}>
+            {categories.map((category) => <option key={category.id} value={category.id}>{isRoshCategory(category) ? 'Rosh' : category.name}</option>)}
           </select>
-          <select className="new-order-select" value={flavorId} onChange={(event) => setFlavorId(event.target.value)} disabled={!brandId} aria-label="Sabor">
-            <option value="">Selecione o sabor</option>
-            {brandFlavors.map((flavor) => <option key={flavor.id} value={flavor.id}>{flavor.name}</option>)}
-          </select>
-        </div> : <select id="order-product" className="new-order-select" value={productId} onChange={(event) => setProductId(event.target.value)}>
-          <option value="">Selecione um produto</option>
-          {products.filter((product) => product.category_id === categoryId).map((product) => <option key={product.id} value={product.id}>{product.name} · {formatMoney(product.price)}</option>)}
-        </select>}
+          {roshSelected ? <div className="new-order-essence-fields">
+            <select className="new-order-select" value={brandId} onChange={(event) => { setBrandId(event.target.value); setFlavorId('') }} aria-label="Marca">
+              <option value="">Selecione a marca</option>
+              {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+            </select>
+            <select className="new-order-select" value={flavorId} onChange={(event) => setFlavorId(event.target.value)} disabled={!brandId} aria-label="Sabor">
+              <option value="">Selecione o sabor</option>
+              {brandFlavors.map((flavor) => <option key={flavor.id} value={flavor.id}>{flavor.name}</option>)}
+            </select>
+          </div> : <select id="order-product" className="new-order-select" value={productId} onChange={(event) => setProductId(event.target.value)} aria-label="Produto">
+            <option value="">Selecione um produto</option>
+            {products.filter((product) => product.category_id === categoryId).map((product) => <option key={product.id} value={product.id}>{product.name} · {formatMoney(product.price)}</option>)}
+          </select>}
+        </div>
         {roshSelected && selectedFlavor && <small className="new-order-hint">{rosh ? `Rosh · ${formatMoney(rosh.product.price)} por unidade` : 'Este sabor ainda não possui um Rosh cadastrado.'}</small>}
         <form className="new-order-item-form" onSubmit={addItem}>
-          <input type="number" min="1" max="20" value={quantity} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantidade" />
-          <button className="icon-success" type="submit" aria-label="Adicionar item" disabled={!canAdd}><Plus size={17} /></button>
+          <label className="new-order-qty"><span>Qtd.</span><input type="number" min="1" max="20" value={quantity} onChange={(event) => setQuantity(event.target.value)} aria-label="Quantidade" /></label>
+          <button className="primary-button new-order-add" type="submit" disabled={!canAdd}><Plus size={16} />Adicionar ao pedido</button>
         </form>
         <label htmlFor="order-payment">Pagamento</label>
         <select id="order-payment" className="new-order-select" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
@@ -154,6 +156,7 @@ export function NewOrderPage() {
             <div className="order-summary-actions"><b>{formatMoney(Number(item.product.price) * item.quantity)}</b><button className="icon-danger" type="button" onClick={() => setCart((current) => current.filter((entry) => entry.key !== item.key))} aria-label={`Remover ${item.label}`}><Trash2 size={15} /></button></div>
           </div>)}
           <div className="new-order-total"><span>Total</span><strong>{formatMoney(total)}</strong></div>
+          {!customerId && <p className="new-order-warning">Selecione um cliente para criar o pedido.</p>}
           <button className="primary-button detail-action" type="button" disabled={isSaving || !customerId || cart.length === 0} onClick={() => void submitOrder()}>{isSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}{isSaving ? 'Enviando...' : 'Criar pedido'}</button>
         </>}
       </article>

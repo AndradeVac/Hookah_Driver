@@ -24,7 +24,7 @@ export function DashboardOverviewPage() {
     setIsExporting(true)
     setError('')
     try {
-      await downloadDashboardExport(period, format)
+      await downloadDashboardExport(period, format, customStart ? `${customStart}T00:00:00Z` : undefined, customEnd ? `${customEnd}T23:59:59Z` : undefined)
     } catch {
       setError('Não foi possível exportar o dashboard.')
     } finally {
@@ -45,7 +45,7 @@ export function DashboardOverviewPage() {
 
   return (
     <section className="page-content dashboard-tech-shell">
-      <div className="page-header dashboard-header"><div><span className="eyebrow black">HOOKAH DRIVE</span><h1>Visão do Lounge</h1><p>Resumo de desempenho</p></div><div className="dashboard-tools"><select value={period} onChange={(event) => setPeriod(event.target.value as AnalyticsPeriod)} aria-label="Período do dashboard"><option value="month">Este mês</option><option value="quarter">Este trimestre</option><option value="all">Todo período</option></select><input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} aria-label="Data inicial" /><input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} aria-label="Data final" /><button type="button" onClick={() => void exportDashboard('xlsx')} disabled={isExporting}>Excel</button><button type="button" onClick={() => void exportDashboard('pdf')} disabled={isExporting}>PDF</button></div></div>
+      <div className="page-header dashboard-header"><div><span className="eyebrow black">HOOKAH DRIVE</span><h1>Visão do Lounge</h1><p>Resumo de desempenho</p></div><div className="dashboard-tools"><select value={period} onChange={(event) => setPeriod(event.target.value as AnalyticsPeriod)} aria-label="Período do dashboard"><option value="month">Este mês</option><option value="quarter">Este trimestre</option><option value="all">Todo período</option></select><input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} aria-label="Data inicial" title="Data inicial" /><input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} aria-label="Data final" title="Data final" /><button type="button" onClick={() => void exportDashboard('xlsx')} disabled={isExporting}>Excel</button><button type="button" onClick={() => void exportDashboard('pdf')} disabled={isExporting}>PDF</button></div></div>
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
       <div className="metrics-grid">{metrics.map(({ label, value, delta, icon: Icon }) => <article key={label} className="metric-tech-card"><div className="metric-card-top"><span>{label}</span><div className="metric-icon"><Icon size={17} /></div></div><strong>{isLoading ? <LoaderCircle className="spin" size={22} /> : value}</strong><small>{delta}</small></article>)}</div>
       <div className="analytics-grid">
