@@ -166,3 +166,43 @@ class OrderService:
 
         self.db.commit()
         return order
+
+    def delete_order(self, order_id: UUID, actor: User | None = None) -> None:
+        """Delete a specific order."""
+        order = self.get_by_id(order_id)
+        
+        if actor is not None:
+            self.db.add(AuditLog(
+                actor_user_id=actor.id,
+                action="ORDER_DELETED",
+                entity_type="ORDER",
+                entity_id=order.id,
+                details=f"order_number={order.order_number}",
+            ))
+        
+        try:
+            self.repository.delete(order_id)
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
+
+    def delete_all_orders(self, actor: User | None = None) -> dict:
+        """Delete all orders. Returns a dictionary with the count of deleted orders."""
+        try:
+            deleted_count = self.repository.delete_all()
+            
+            if actor is not None:
+                self.db.add(AuditLog(
+                    actor_user_id=actor.id,
+                    action="ORDERS_CLEARED",
+                    entity_type="ORDER",
+                    entity_id=None,
+                    details=f"deleted_count={deleted_count}",
+                ))
+            
+            self.db.commit()
+            return {"deleted_count": deleted_count}
+        except Exception:
+            self.db.rollback()
+            raise

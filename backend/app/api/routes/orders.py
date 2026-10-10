@@ -53,3 +53,21 @@ def update_order_status(
     current_user: User = Depends(staff_only),
 ):
     return OrderService(db).update_status(order_id, data, current_user)
+
+
+@router.delete("/{order_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_order(
+    order_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(staff_only),
+):
+    OrderService(db).delete_order(order_id, current_user)
+    return None
+
+
+@router.delete("", status_code=status.HTTP_200_OK)
+def delete_all_orders(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(staff_only),
+):
+    return OrderService(db).delete_all_orders(current_user)

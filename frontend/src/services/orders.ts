@@ -56,3 +56,12 @@ export async function updateOrderStatus(id: string, status: OrderStatus, reason?
   const { data } = await api.patch<Order>(`/orders/${id}/status`, { status, reason })
   return data
 }
+
+export async function deleteOrder(id: string) {
+  await api.delete(`/orders/${id}`)
+}
+
+export async function deleteAllOrders() {
+  const { data } = await api.delete<{ deleted_count: number }>('/orders')
+  return data
+}

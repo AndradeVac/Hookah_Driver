@@ -1,9 +1,9 @@
-import { AlertCircle, ArrowRight, LoaderCircle, Plus, Search, X } from 'lucide-react'
+import { AlertCircle, ArrowRight, LoaderCircle, Plus, Search, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatMoney, formatTime, paymentMethodLabels } from '../../lib/format'
 import { apiErrorMessage } from '../../services/api'
-import { getOrders, updateOrderStatus, type Order } from '../../services/orders'
+import { deleteAllOrders, deleteOrder, getOrders, updateOrderStatus, type Order } from '../../services/orders'
 import type { OrderStatus } from '../../types'
 
 const REFRESH_INTERVAL_MS = 2_000
@@ -24,6 +24,8 @@ export function OrdersPage() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | OrderStatus>('ALL')
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -51,6 +53,35 @@ export function OrdersPage() {
     }
   }
 
+  async function removeOrder(order: Order) {
+    if (!confirm(`Tem certeza que deseja remover o pedido #${order.order_number}?`)) return
+    setUpdatingId(order.id)
+    setError('')
+    try {
+      await deleteOrder(order.id)
+      setOrders((current) => current.filter((item) => item.id !== order.id))
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Não foi possível remover o pedido.'))
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  async function handleDeleteAllOrders() {
+    setIsDeleting(true)
+    setError('')
+    try {
+      const result = await deleteAllOrders()
+      setOrders([])
+      setShowDeleteAllDialog(false)
+      alert(`${result.deleted_count} pedido(s) removido(s) com sucesso.`)
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Não foi possível limpar os pedidos.'))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   const filteredOrders = useMemo(() => orders.filter((order) => {
     const searchable = `${order.order_number} ${order.customer_name ?? ''} ${order.items.map((item) => item.product_name).join(' ')}`.toLowerCase()
     return (statusFilter === 'ALL' || order.status === statusFilter) && searchable.includes(search.toLowerCase())
@@ -60,10 +91,23 @@ export function OrdersPage() {
     <section className="page-content orders-page-shell">
       <div className="page-header orders-header">
         <div><span className="eyebrow">Operação conectada</span><h1>Pedidos</h1><p>Atualizado automaticamente a cada 2 segundos</p></div>
-        <button className="primary-button orders-new-button" type="button" onClick={() => navigate('/orders/new')}><Plus size={16} /> Novo pedido</button>
+        <div className="orders-header-buttons">
+          <button className="primary-button orders-new-button" type="button" onClick={() => navigate('/orders/new')}><Plus size={16} /> Novo pedido</button>
+          {orders.length > 0 && <button className="secondary-button orders-clear-button" type="button" onClick={() => setShowDeleteAllDialog(true)}><Trash2 size={16} /> Limpar pedidos</button>}
+        </div>
         <div className="pill-status">{orders.length} {orders.length === 1 ? 'pedido recente' : 'pedidos recentes'}</div>
       </div>
       {error && <div className="api-error"><AlertCircle size={16} />{error}</div>}
+      {showDeleteAllDialog && <div className="modal-overlay" role="presentation" onClick={() => setShowDeleteAllDialog(false)}>
+        <div className="modal-content" role="dialog" onClick={(event) => event.stopPropagation()}>
+          <h2>Limpar todos os pedidos?</h2>
+          <p>Essa ação vai remover todos os {orders.length} pedido(s) e não pode ser desfeita.</p>
+          <div className="modal-actions">
+            <button type="button" className="secondary-button" onClick={() => setShowDeleteAllDialog(false)}>Cancelar</button>
+            <button type="button" className="danger-button" onClick={() => void handleDeleteAllOrders()} disabled={isDeleting}>{isDeleting ? <LoaderCircle className="spin" size={15} /> : <Trash2 size={15} />}{isDeleting ? 'Removendo...' : 'Confirmar limpeza'}</button>
+          </div>
+        </div>
+      </div>}
       <div className="orders-filters">
         <label><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar pedido, cliente ou produto" /></label>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} aria-label="Filtrar pedidos por status">
@@ -87,7 +131,10 @@ export function OrdersPage() {
                   <div className="order-topline"><span className="order-number">#{order.order_number}</span><span className="order-user">{order.customer_name ?? 'Cliente'}</span><span className="order-place">{formatTime(order.created_at)}</span></div>
                   <div className="order-product"><span className="product-tag">{order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</span><span className="product-name">{order.items.map((item) => `${item.quantity}x ${item.product_name}`).join(', ')}</span></div>
                   <div className="order-meta"><span className="order-price">{formatMoney(order.total)}</span><span>{paymentMethodLabels[order.payment_method] ?? order.payment_method}</span></div>
-                  {column.next && <button className={`order-action order-action-${column.status.toLowerCase()}`} onClick={(event) => { event.stopPropagation(); void advanceOrder(order, column.next) }} disabled={updatingId === order.id}>{updatingId === order.id ? <LoaderCircle className="spin" size={15} /> : <ArrowRight size={15} />}{updatingId === order.id ? 'Atualizando...' : column.action}</button>}
+                  <div className="order-actions">
+                    {column.next && <button className={`order-action order-action-${column.status.toLowerCase()}`} onClick={(event) => { event.stopPropagation(); void advanceOrder(order, column.next) }} disabled={updatingId === order.id}>{updatingId === order.id ? <LoaderCircle className="spin" size={15} /> : <ArrowRight size={15} />}{updatingId === order.id ? 'Atualizando...' : column.action}</button>}
+                    <button className="order-action-delete" onClick={(event) => { event.stopPropagation(); void removeOrder(order) }} disabled={updatingId === order.id} title="Remover pedido"><Trash2 size={15} /></button>
+                  </div>
                 </article>
               ))}
             </div>
