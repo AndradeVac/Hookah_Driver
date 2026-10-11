@@ -1,11 +1,14 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
+import random
+import string
 
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BusinessRuleError, NotFoundError
 from app.models.audit_log import AuditLog
+from app.models.customer import Customer
 from app.models.order import Order, OrderStatus, PaymentStatus
 from app.models.order_item import OrderItem
 from app.models.order_status_history import OrderStatusHistory
@@ -42,12 +45,21 @@ class OrderService:
         self.db = db
 
     def create(self, data: OrderCreate, initial_status: OrderStatus = OrderStatus.RECEIVED) -> Order:
-        customer = self.customer_repository.get_by_id(data.customer_id)
-        if customer is None:
-            raise NotFoundError("Cliente não encontrado.")
+        if data.customer_id:
+            customer = self.customer_repository.get_by_id(data.customer_id)
+            if customer is None:
+                raise NotFoundError("Cliente não encontrado.")
+            customer_id = customer.id
+        else:
+            # Generate a random customer for anonymous orders
+            random_name = f"Cliente #{self._generate_random_id()}"
+            customer = Customer(name=random_name, phone=None, active=True)
+            self.db.add(customer)
+            self.db.flush()
+            customer_id = customer.id
 
         order = Order(
-            customer_id=customer.id,
+            customer_id=customer_id,
             payment_method=data.payment_method,
             status=initial_status,
             subtotal=Decimal("0.00"),
@@ -84,6 +96,11 @@ class OrderService:
             self.db.rollback()
             raise
         return order
+
+    @staticmethod
+    def _generate_random_id(length: int = 6) -> str:
+        """Generate a random alphanumeric ID for anonymous customers."""
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
     def get_by_id(self, order_id: UUID) -> Order:
         order = self.repository.get_by_id(order_id)

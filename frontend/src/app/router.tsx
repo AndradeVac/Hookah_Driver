@@ -13,7 +13,6 @@ const DashboardOverviewPage = page(() => import('../features/dashboard/Dashboard
 const OrdersPage = page(() => import('../features/orders/OrdersPage'), 'OrdersPage')
 const NewOrderPage = page(() => import('../features/orders/NewOrderPage'), 'NewOrderPage')
 const OrderDetailPage = page(() => import('../features/orders/OrderDetailPage'), 'OrderDetailPage')
-const CustomersPage = page(() => import('../features/customers/CustomersPage'), 'CustomersPage')
 const BrandsPage = page(() => import('../features/brands/BrandsPage'), 'BrandsPage')
 const CategoriesPage = page(() => import('../features/categories/CategoriesPage'), 'CategoriesPage')
 const FlavorsPage = page(() => import('../features/flavors/FlavorsPage'), 'FlavorsPage')
@@ -40,7 +39,6 @@ export function AppRouter() {
               <Route path="/orders" element={<OrdersPage />} />
               <Route path="/orders/new" element={<NewOrderPage />} />
               <Route path="/orders/:id" element={<OrderDetailPage />} />
-              <Route path="/customers" element={<CustomersPage />} />
               <Route element={<RoleRoute roles={['ADMIN']} />}>
                 <Route path="/" element={<DashboardOverviewPage />} />
                 <Route path="/dashboard" element={<Navigate to="/" replace />} />

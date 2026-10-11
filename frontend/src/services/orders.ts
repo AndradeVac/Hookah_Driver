@@ -47,7 +47,7 @@ export async function getOrder(id: string) {
   return data
 }
 
-export async function createOrder(payload: { customer_id: string; payment_method: PaymentMethod; items: NewOrderItem[] }) {
+export async function createOrder(payload: { customer_id?: string; payment_method: PaymentMethod; items: NewOrderItem[] }) {
   const { data } = await api.post<Order>('/orders', payload)
   return data
 }

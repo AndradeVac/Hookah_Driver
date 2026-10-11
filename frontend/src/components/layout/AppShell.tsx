@@ -9,7 +9,6 @@ import {
   Menu,
   Package,
   Tags,
-  UsersRound,
   UserCog,
   ShieldCheck,
   X,
@@ -25,7 +24,6 @@ const navigation = [
   { label: 'Sabores', to: '/flavors', icon: Coffee },
   { label: 'Marcas', to: '/brands', icon: Tags },
   { label: 'Categorias', to: '/categories', icon: Boxes },
-  { label: 'Clientes', to: '/customers', icon: UsersRound },
   { label: 'Equipe', to: '/users', icon: UserCog },
   { label: 'Auditoria', to: '/audit', icon: ShieldCheck },
 ]
@@ -67,9 +65,7 @@ export function AppShell() {
             </NavLink>
           ))}
           {user?.role === 'ADMIN' && <><button className="nav-section-toggle" type="button" onClick={() => toggleSection('catalog')}><span className="nav-label">Catálogo</span><ChevronDown size={14} className={sections.catalog ? 'section-chevron-open' : ''} /></button>{sections.catalog && navigation.slice(2, 6).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
-          <button className="nav-section-toggle" type="button" onClick={() => toggleSection('relationship')}><span className="nav-label">Relacionamento</span><ChevronDown size={14} className={sections.relationship ? 'section-chevron-open' : ''} /></button>
-          {sections.relationship && navigation.slice(6, 7).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}
-          {user?.role === 'ADMIN' && <><button className="nav-section-toggle" type="button" onClick={() => toggleSection('administration')}><span className="nav-label">Administração</span><ChevronDown size={14} className={sections.administration ? 'section-chevron-open' : ''} /></button>{sections.administration && navigation.slice(7).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
+          {user?.role === 'ADMIN' && <><button className="nav-section-toggle" type="button" onClick={() => toggleSection('administration')}><span className="nav-label">Administração</span><ChevronDown size={14} className={sections.administration ? 'section-chevron-open' : ''} /></button>{sections.administration && navigation.slice(6).map(({ label, to, icon: Icon }) => <NavLink key={to} to={to} onClick={() => setOpen(false)}><Icon size={18} strokeWidth={1.8} /> {label}</NavLink>)}</>}
         </nav>
 
         <div className="sidebar-footer">

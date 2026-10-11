@@ -6,7 +6,6 @@ import { formatMoney } from '../../lib/format'
 import { apiErrorMessage } from '../../services/api'
 import { getBrands, type Brand } from '../../services/brands'
 import { getCategories, type Category } from '../../services/categories'
-import { getCustomers, type Customer } from '../../services/customers'
 import { getFlavors, type Flavor } from '../../services/flavors'
 import { createOrder } from '../../services/orders'
 import { getProducts, type Product } from '../../services/products'
@@ -16,12 +15,10 @@ type CartItem = { key: string; product: Product; label: string; quantity: number
 
 export function NewOrderPage() {
   const navigate = useNavigate()
-  const [customers, setCustomers] = useState<Customer[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [flavors, setFlavors] = useState<Flavor[]>([])
-  const [customerId, setCustomerId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('PIX')
   const [categoryId, setCategoryId] = useState('')
   const [brandId, setBrandId] = useState('')
@@ -34,17 +31,16 @@ export function NewOrderPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([getCustomers(), getProducts(), getCategories(), getBrands(), getFlavors()])
-      .then(([loadedCustomers, loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {
+    Promise.all([getProducts(), getCategories(), getBrands(), getFlavors()])
+      .then(([loadedProducts, loadedCategories, loadedBrands, loadedFlavors]) => {
         const activeCategories = loadedCategories.filter((category) => category.active)
-        setCustomers(loadedCustomers.filter((customer) => customer.active))
         setProducts(loadedProducts.filter((product) => product.active))
         setCategories(activeCategories)
         setBrands(loadedBrands.filter((brand) => brand.active))
         setFlavors(loadedFlavors.filter((flavor) => flavor.active))
         setCategoryId(activeCategories[0]?.id ?? '')
       })
-      .catch(() => setError('Não foi possível carregar clientes e produtos.'))
+      .catch(() => setError('Não foi possível carregar produtos.'))
       .finally(() => setIsLoading(false))
   }, [])
 
@@ -85,12 +81,12 @@ export function NewOrderPage() {
   }
 
   async function submitOrder() {
-    if (!customerId || cart.length === 0) return
+    if (cart.length === 0) return
     setIsSaving(true)
     setError('')
     try {
       const order = await createOrder({
-        customer_id: customerId,
+        customer_id: undefined,
         payment_method: paymentMethod,
         items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })),
       })
@@ -112,11 +108,6 @@ export function NewOrderPage() {
     {error && <div className="api-error">{error}</div>}
     <div className="new-order-grid">
       <article className="resource-form">
-        <label htmlFor="order-customer">Cliente</label>
-        <select id="order-customer" className="new-order-select" value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
-          <option value="">Selecione um cliente</option>
-          {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ''}</option>)}
-        </select>
         <label htmlFor="order-category">Adicionar item</label>
         <div className="new-order-picker">
           <select id="order-category" className="new-order-select" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setProductId('') }}>
@@ -156,8 +147,7 @@ export function NewOrderPage() {
             <div className="order-summary-actions"><b>{formatMoney(Number(item.product.price) * item.quantity)}</b><button className="icon-danger" type="button" onClick={() => setCart((current) => current.filter((entry) => entry.key !== item.key))} aria-label={`Remover ${item.label}`}><Trash2 size={15} /></button></div>
           </div>)}
           <div className="new-order-total"><span>Total</span><strong>{formatMoney(total)}</strong></div>
-          {!customerId && <p className="new-order-warning">Selecione um cliente para criar o pedido.</p>}
-          <button className="primary-button detail-action" type="button" disabled={isSaving || !customerId || cart.length === 0} onClick={() => void submitOrder()}>{isSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}{isSaving ? 'Enviando...' : 'Criar pedido'}</button>
+          <button className="primary-button detail-action" type="button" disabled={isSaving || cart.length === 0} onClick={() => void submitOrder()}>{isSaving ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}{isSaving ? 'Enviando...' : 'Criar pedido'}</button>
         </>}
       </article>
     </div>

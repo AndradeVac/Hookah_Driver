@@ -19,7 +19,8 @@ router = APIRouter(
 
 @router.post("", response_model=CustomerResponse, status_code=201)
 def create_customer(data: CustomerCreate, db: Session = Depends(get_db)):
-    return CustomerService(db).create(data)
+    raise NotImplementedError("Criação de clientes foi desativada")
+    # return CustomerService(db).create(data)
 
 
 @router.get("", response_model=list[CustomerResponse])
@@ -34,9 +35,11 @@ def get_customer(customer_id: UUID, db: Session = Depends(get_db)):
 
 @router.patch("/{customer_id}", response_model=CustomerResponse)
 def update_customer(customer_id: UUID, data: CustomerUpdate, db: Session = Depends(get_db)):
-    return CustomerService(db).update(customer_id, data)
+    raise NotImplementedError("Atualização de clientes foi desativada")
+    # return CustomerService(db).update(customer_id, data)
 
 
 @router.delete("/{customer_id}", response_model=CustomerResponse)
 def delete_customer(customer_id: UUID, db: Session = Depends(get_db)):
-    return CustomerService(db).delete(customer_id)
+    raise NotImplementedError("Exclusão de clientes foi desativada")
+    # return CustomerService(db).delete(customer_id)

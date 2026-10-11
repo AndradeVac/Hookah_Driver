@@ -14,7 +14,7 @@ class OrderItemCreate(BaseModel):
 
 
 class OrderCreate(BaseModel):
-    customer_id: UUID
+    customer_id: UUID | None = Field(default=None)
     payment_method: PaymentMethod
     items: list[OrderItemCreate] = Field(min_length=1)
 
