@@ -31,12 +31,10 @@ import { getCustomerCatalog } from '../../services/customerCatalog'
 import {
   createPublicOrder,
   getPublicOrder,
-  getPublicOrderHistory,
-  type PublicHistoryOrder,
   type PublicOrderResponse,
 } from '../../services/publicOrders'
 
-type Step = 'register' | 'menu' | 'category' | 'product' | 'brands' | 'flavors' | 'rosh' | 'cart' | 'customer' | 'payment' | 'success'
+type Step = 'menu' | 'category' | 'product' | 'brands' | 'flavors' | 'rosh' | 'cart' | 'customer' | 'payment' | 'success'
 
 type CartItem = {
   product: Product
@@ -54,7 +52,6 @@ const CATALOG_REFRESH_MS = 15_000
 const FINAL_STATUSES = new Set(['FINISHED', 'CANCELLED'])
 
 const STEP_TITLES: Record<Step, string> = {
-  register: 'Antes de começar',
   menu: 'Cardápio',
   category: 'Produtos',
   product: 'Produto',
@@ -92,13 +89,6 @@ const STATUS_COPY: Record<string, { title: string; text: string }> = {
   CANCELLED: { title: 'Pedido cancelado', text: 'Esse pedido foi cancelado. Fale com a equipe do lounge.' },
 }
 
-const NAME_PATTERN = /^[a-zA-ZÀ-ÿ\s]+$/
-const PHONE_PATTERN = /^[1-9]{2}9?[2-9][0-9]{7}$/
-
-function isValidPhone(digits: string) {
-  return PHONE_PATTERN.test(digits) && !/^(.)\1+$/.test(digits)
-}
-
 function cartKey(item: CartItem) {
   return `${item.product.id}|${item.variation ?? ''}|${item.notes ?? ''}`
 }
@@ -128,9 +118,7 @@ export function CustomerJourneyPage() {
       return null
     }
   })
-  const [step, setStep] = useState<Step>('register')
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [step, setStep] = useState<Step>('menu')
   const [brands, setBrands] = useState<Brand[]>([])
   const [flavors, setFlavors] = useState<Flavor[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -150,7 +138,6 @@ export function CustomerJourneyPage() {
   const [search, setSearch] = useState('')
   const [favorites, setFavorites] = useState<string[]>(() => readJson(FAVORITES_KEY, []))
   const [lastOrder, setLastOrder] = useState<CartItem[]>(() => readJson(LAST_ORDER_KEY, []))
-  const [history, setHistory] = useState<PublicHistoryOrder[]>([])
   const [onlinePayments, setOnlinePayments] = useState(false)
   const [catalogError, setCatalogError] = useState('')
   const cartRef = useRef(cart)
@@ -300,9 +287,6 @@ export function CustomerJourneyPage() {
     }
   }, [order?.public_token, step])
 
-  const phoneDigits = phone.replace(/\D/g, '')
-  const nameValid = name.trim().length >= 2 && NAME_PATTERN.test(name.trim())
-  const phoneValid = isValidPhone(phoneDigits)
   const total = useMemo(() => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0), [cart])
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
   const menuCategories = categories.filter((item) => !isRoshCategory(item))
@@ -365,11 +349,6 @@ export function CustomerJourneyPage() {
     })
   }
 
-  async function beginMenu() {
-    setStep('menu')
-    setHistory(await getPublicOrderHistory(phoneDigits).catch(() => []))
-  }
-
   async function submit() {
     if (!cart.length) return
     setSending(true)
@@ -384,8 +363,8 @@ export function CustomerJourneyPage() {
         return
       }
       const created = await createPublicOrder({
-        customer_name: name.trim(),
-        customer_phone: phoneDigits,
+        customer_name: `Cliente #${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        customer_phone: '',
         payment_method: catalog.config.online_payments_enabled ? 'PIX' : 'CASH',
         items: latestCart.map((item) => ({ product_id: item.product.id, quantity: item.quantity, notes: item.notes })),
       })
@@ -446,33 +425,13 @@ export function CustomerJourneyPage() {
         <div>
           <img className="customer-logo" {...logoImage} />
           <h1>{headerTitle}</h1>
-          <p>{step === 'register' ? 'Identifique seu pedido em poucos segundos.' : 'Escolha com calma. O lounge cuida do resto.'}</p>
+          <p>Escolha com calma. O lounge cuida do resto.</p>
         </div>
         <div className="customer-qr"><QrCode size={20} /><span>QR do lounge</span></div>
       </header>
 
       {error && <div className="customer-error" role="alert">{error}</div>}
       {catalogError && <div className="customer-error" role="alert">{catalogError}</div>}
-
-      {step === 'register' && (
-        <section className="customer-panel customer-register">
-          <h2>Como podemos te chamar?</h2>
-          <label>
-            Nome
-            <input minLength={2} maxLength={120} autoComplete="name" placeholder="Seu nome" value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          <label>
-            WhatsApp
-            <input inputMode="tel" autoComplete="tel" placeholder="(11) 99999-9999" value={phone} onChange={(event) => setPhone(event.target.value)} />
-          </label>
-          <small>Usaremos esses dados apenas para identificar e acompanhar seu pedido.</small>
-          {name.trim().length > 0 && !nameValid && <small className="customer-validation">Informe seu nome (apenas letras).</small>}
-          {phone.length > 0 && !phoneValid && <small className="customer-validation">Informe um telefone válido com DDD.</small>}
-          <button className="customer-primary" disabled={!nameValid || !phoneValid} onClick={() => void beginMenu()}>
-            Continuar <ArrowRight size={16} />
-          </button>
-        </section>
-      )}
 
       {step === 'menu' && (
         <section className="journey-menu">
@@ -495,22 +454,7 @@ export function CustomerJourneyPage() {
                   <button onClick={() => setStep('brands')}>Escolher Rosh <ArrowRight size={16} /></button>
                 </div>
               </div>}
-              {history.length > 0 && (
-                <div className="journey-history">
-                  <h3>Pedidos anteriores</h3>
-                  {history.slice(0, 3).map((item) => (
-                    <button key={item.order_number} onClick={() => restoreCart(item.items.map((entry) => ({ productId: entry.product_id, quantity: entry.quantity, notes: entry.notes ?? undefined })))}>
-                      <History size={16} />
-                      <span>
-                        <strong>{item.items.map((entry) => `${entry.quantity}x ${entry.product_name}`).join(', ')}</strong>
-                        <small>{new Date(item.created_at).toLocaleDateString('pt-BR')} · {formatMoney(item.total)}</small>
-                      </span>
-                      <RotateCcw size={15} aria-label="Pedir de novo" />
-                    </button>
-                  ))}
-                </div>
-              )}
-              {history.length === 0 && lastOrder.length > 0 && (
+              {lastOrder.length > 0 && (
                 <button className="journey-reorder" onClick={() => restoreCart(lastOrder.map((entry) => ({ productId: entry.product.id, quantity: entry.quantity, variation: entry.variation, selectedFlavorId: entry.selectedFlavorId, notes: entry.notes })))}>
                   <History size={16} />
                   <span>Repetir último pedido</span>
@@ -689,8 +633,7 @@ export function CustomerJourneyPage() {
       {step === 'customer' && (
         <section className="customer-panel">
           <button className="customer-back" onClick={() => setStep('cart')}><ArrowLeft size={16} /> Carrinho</button>
-          <h2>Confirmar seus dados</h2>
-          <p className="customer-muted">{name.trim()} · {phone}</p>
+          <h2>Confirmar pedido</h2>
           {!onlinePayments && <p className="customer-muted">Pagamento no balcão. Seu pedido será enviado direto para a equipe, sem pagamento online.</p>}
           <div className="customer-total">Total <strong>{formatMoney(total)}</strong></div>
           <button className="customer-primary" disabled={sending} onClick={() => onlinePayments ? setStep('payment') : void submit()}>
@@ -754,7 +697,7 @@ export function CustomerJourneyPage() {
         <Link className="customer-credits" to="/creditos">Créditos das imagens</Link>
       </>}
 
-      {step !== 'register' && step !== 'success' && (
+      {step !== 'success' && (
         <button className="customer-cart-button" onClick={() => setStep('cart')}>
           <ShoppingBag size={18} />
           <span>{itemCount} {itemCount === 1 ? 'item' : 'itens'}</span>
