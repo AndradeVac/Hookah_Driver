@@ -24,7 +24,7 @@ class PublicOrderItem(BaseModel):
 
 class PublicOrderCreate(BaseModel):
     customer_name: str = Field(min_length=2, max_length=120)
-    customer_phone: str = Field(min_length=10, max_length=20)
+    customer_phone: str | None = Field(default=None, max_length=20)
     payment_method: PaymentMethod = PaymentMethod.CASH
     items: list[PublicOrderItem] = Field(min_length=1, max_length=30)
 
@@ -36,9 +36,13 @@ class PublicOrderCreate(BaseModel):
             raise ValueError("Informe seu nome.")
         return value
 
-    @field_validator("customer_phone")
+    @field_validator("customer_phone", mode="before")
     @classmethod
-    def _normalize_phone(cls, value: str) -> str:
+    def _normalize_phone(cls, value: str | None) -> str | None:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Informe um telefone válido com DDD.")
         return normalize_phone(value)
 
 
