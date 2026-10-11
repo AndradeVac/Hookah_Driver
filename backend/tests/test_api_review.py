@@ -149,6 +149,57 @@ def test_public_order_is_paid_in_person_when_online_payments_are_off(monkeypatch
     assert response.json()["payment_status"] == "PENDING"
 
 
+
+def test_public_order_can_be_created_without_customer_phone(monkeypatch):
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from app.core.database import get_db
+    from app.models.order import OrderStatus, PaymentStatus
+
+    captured = {}
+
+    class AnonymousCustomers:
+        def __init__(self, db):
+            pass
+
+        def get_by_phone(self, phone):
+            raise AssertionError("anonymous checkout must not look up a customer")
+
+        def create(self, customer):
+            raise AssertionError("anonymous checkout must not create a phone-based customer")
+
+    class FakeOrderService:
+        def __init__(self, db):
+            pass
+
+        def create(self, data, initial_status):
+            captured["customer_id"] = data.customer_id
+            captured["status"] = initial_status
+            return SimpleNamespace(
+                id=uuid4(), order_number=42, status=initial_status, total="25.00",
+                public_token=uuid4(), payment_status=PaymentStatus.PENDING,
+            )
+
+    monkeypatch.setattr("app.api.routes.public_orders.settings.online_payments_enabled", False)
+    monkeypatch.setattr("app.api.routes.public_orders.CustomerRepository", AnonymousCustomers)
+    monkeypatch.setattr("app.api.routes.public_orders.OrderService", FakeOrderService)
+    app.dependency_overrides[get_db] = lambda: None
+    try:
+        response = request("/public/orders", "POST", json={
+            "customer_name": "Cliente #ABC123",
+            "customer_phone": "",
+            "items": [{"product_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6", "quantity": 1}],
+        })
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert response.status_code == 201, response.text
+    assert captured["customer_id"] is None
+    assert captured["status"] is OrderStatus.RECEIVED
+    assert response.json()["order_number"] == 42
+
+
 def test_public_board_exposes_only_order_numbers_status_and_time(monkeypatch):
     from datetime import datetime, timezone
     from types import SimpleNamespace
