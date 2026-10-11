@@ -47,7 +47,7 @@ export type PublicHistoryOrder = {
 
 export async function createPublicOrder(payload: {
   customer_name: string
-  customer_phone: string
+  customer_phone?: string | null
   payment_method: 'PIX' | 'CARD' | 'CASH'
   items: Array<{ product_id: string; quantity: number; notes?: string }>
 }) {
