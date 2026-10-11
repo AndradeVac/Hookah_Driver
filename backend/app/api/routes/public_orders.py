@@ -92,18 +92,20 @@ def public_config():
 )
 def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
     customers = CustomerRepository(db)
-    customer = customers.get_by_phone(data.customer_phone)
-    if customer is None:
-        customer = customers.create(Customer(name=data.customer_name, phone=data.customer_phone))
-    elif customer.name != data.customer_name:
-        customer.name = data.customer_name
+    customer = None
+    if data.customer_phone:
+        customer = customers.get_by_phone(data.customer_phone)
+        if customer is None:
+            customer = customers.create(Customer(name=data.customer_name, phone=data.customer_phone))
+        elif customer.name != data.customer_name:
+            customer.name = data.customer_name
 
-    # With online payments off, every customer order is paid in person at the lounge.
+    # Anonymous checkout is supported by OrderService when customer_id is None.
     payment_method = data.payment_method if settings.online_payments_enabled else PaymentMethod.CASH
     online_payment = payment_method in (PaymentMethod.PIX, PaymentMethod.CARD)
     order = OrderService(db).create(
         OrderCreate(
-            customer_id=customer.id,
+            customer_id=customer.id if customer is not None else None,
             payment_method=payment_method,
             items=[
                 OrderItemCreate(product_id=item.product_id, quantity=item.quantity, notes=item.notes)
@@ -123,13 +125,19 @@ def create_public_order(data: PublicOrderCreate, db: Session = Depends(get_db)):
     )
 
     title = f"Pedido #{order.order_number} - Hookah Driver"
+    # A stable, valid synthetic email is sufficient when no customer contact was collected.
+    payer_email = (
+        f"cliente{customer.phone}@hookahdriver.com"
+        if customer is not None and customer.phone
+        else f"pedido{order.order_number}@hookahdriver.com"
+    )
     try:
         if payment_method is PaymentMethod.PIX:
             pix = PaymentService().create_pix_payment(
                 order_id=str(order.id),
                 description=title,
                 amount=order.total,
-                payer_email=f"cliente{customer.phone}@hookahdriver.com",
+                payer_email=payer_email,
             )
             order.mercado_pago_payment_id = pix["payment_id"]
             order.pix_qr_code = pix["qr_code"]
